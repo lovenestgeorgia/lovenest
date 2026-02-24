@@ -51,37 +51,17 @@ export function Checkout() {
                 console.error("Failed to send Telegram notification:", notifyErr);
             }
 
-            // 2. Initiate Real Unipay Checkout Redirect using V3 API
-            const response = await fetch("/api/unipay/checkout", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ...formData, amount: total, orderId: orderId }),
-            });
-            const data = await response.json();
+            // 2. Redirect to WordPress Checkout
+            // Product ID 27552 is the "Read me when you need me" book on WordPress
+            // Ifcart has multiple items, we could theoretically build a more complex query, 
+            // but for now the main product is 27552
 
-            if (data.success && data.unipayData) {
-                // Determine the correct field for the checkout URL based on standard Unipay responses
-                const redirectUrl =
-                    data.unipayData.CheckoutUrl ||
-                    data.unipayData.checkout_url ||
-                    data.unipayData.url ||
-                    data.unipayData.redirectUrl ||
-                    data.unipayData.redirect_url ||
-                    (data.unipayData.data && (data.unipayData.data.CheckoutUrl || data.unipayData.data.checkout_url || data.unipayData.data.url || data.unipayData.data.redirectUrl || data.unipayData.data.redirect_url));
-
-                if (redirectUrl) {
-                    window.location.href = redirectUrl;
-                } else {
-                    console.error("Unipay V3 Success Response missing URL field:", data.unipayData);
-                    throw new Error("Missing checkout URL in UniPay response");
-                }
-            } else {
-                throw new Error(data.error || "Failed to initiate UniPay checkout");
-            }
+            const wpCheckoutUrl = "https://checkout.lovenest.ge/checkout/?add-to-cart=27552";
+            window.location.href = wpCheckoutUrl;
 
         } catch (error) {
             console.error(error);
-            alert("წარმოიშვა შეცდომა კავშირისას.");
+            alert("წარმოიშვა შეცდომა გადამისამართებისას.");
         } finally {
             setLoading(false);
         }
