@@ -33,7 +33,7 @@ export async function POST(req) {
         // We return these details to the frontend so it can construct a hidden form and submit it to Unipay
         return NextResponse.json({
             success: true,
-            actionUrl: "https://checkout.unipay.com/", // Unipay's unified checkout URL
+            actionUrl: "https://www.unipay.com/", // Unipay's unified checkout URL
             payload
         });
     } catch (error) {
