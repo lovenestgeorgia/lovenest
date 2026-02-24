@@ -59,7 +59,7 @@ export function Checkout() {
             // Ifcart has multiple items, we could theoretically build a more complex query, 
             // but for now the main product is 27552
 
-            const wpCheckoutUrl = "https://checkout.lovenest.ge/checkout/?add-to-cart=27552";
+            const wpCheckoutUrl = "https://checkout.lovenest.ge/staging/checkout/?add-to-cart=27552";
             window.location.href = wpCheckoutUrl;
 
         } catch (error) {
