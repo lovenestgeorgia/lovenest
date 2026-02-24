@@ -37,7 +37,7 @@ export function Checkout() {
 
             // 1. Send Telegram Notification immediately (as a pre-payment log)
             try {
-                await fetch("/api/notify", {
+                const notifyRes = await fetch("/api/notify", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -47,8 +47,11 @@ export function Checkout() {
                         totalAmount: total.toFixed(2)
                     })
                 });
+                if (!notifyRes.ok) {
+                    console.error("Telegram notification returned non-ok status:", notifyRes.status);
+                }
             } catch (notifyErr) {
-                console.error("Failed to send Telegram notification:", notifyErr);
+                console.error("Failed to execute Telegram notification fetch:", notifyErr);
             }
 
             // 2. Redirect to WordPress Checkout
