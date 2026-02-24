@@ -14,34 +14,27 @@ export async function POST(req) {
         const currency = "GEL";
 
         // Construct Hash using the standard Unipay format
-        // format: MerchantID|Amount|DefaultCurrency|CustomerEmail|OrderType|APIKey
-        // Note: For real Unipay v3, it involves sending a POST request to their API 
-        // which returns a Checkout URL.
+        // format: MerchantID|Amount|Currency|OrderID|APIKey
+        const hashString = `${merchantId}|${amount}|${currency}|${orderId}|${apiKey}`;
+        const hash = crypto.createHash('md5').update(hashString).digest("hex");
 
-        // For standard Unipay integration, you'd typically make an API call to their backend:
-        /*
-        const unipayResponse = await fetch("https://api.unipay.com/checkout/create", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-        const unipayData = await unipayResponse.json();
-        const redirectUrl = unipayData.checkoutUrl;
-        */
+        // Prepare the payload for Unipay API POST Form
+        const payload = {
+            MerchantID: merchantId,
+            OrderID: orderId,
+            Amount: amount,
+            Currency: currency,
+            Hash: hash,
+            SuccessRedirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/success`,
+            CancelRedirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/cancel`,
+            Language: "KA",
+        };
 
-        // However, as the user just provided keys, we will generate the standard Unipay redirect URL
-        // commonly used in simple integrations where you forward the user with POST params
-        // or to a specific link containing the Hash and Merchant ID.
-
-        // Simulating the API response structure that points to the actual Unipay checkout page:
-        let redirectUrl = `https://checkout.unipay.com/?merchantId=${merchantId}&orderId=${orderId}&amount=${amount}&hash=${hash}`;
-
-
+        // We return these details to the frontend so it can construct a hidden form and submit it to Unipay
         return NextResponse.json({
             success: true,
-            redirectUrl,
-            orderId,
-            payload // Sending payload in dev to verify correctness
+            actionUrl: "https://checkout.unipay.com/", // Unipay's unified checkout URL
+            payload
         });
     } catch (error) {
         console.error("Checkout route error:", error);

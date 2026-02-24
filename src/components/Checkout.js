@@ -51,7 +51,7 @@ export function Checkout() {
                 console.error("Failed to send Telegram notification:", notifyErr);
             }
 
-            // 2. Initiate Real Unipay Checkout
+            // 2. Initiate Real Unipay Checkout Form
             const response = await fetch("/api/unipay/checkout", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -59,10 +59,28 @@ export function Checkout() {
             });
             const data = await response.json();
 
-            if (data.redirectUrl) {
-                window.location.href = data.redirectUrl;
+            if (data.actionUrl && data.payload) {
+                // Dynamically create a form and submit it to Unipay
+                const form = document.createElement("form");
+                form.method = "POST";
+                form.action = data.actionUrl;
+
+                // Add all payload keys as hidden inputs
+                Object.keys(data.payload).forEach(key => {
+                    const addInput = (name, value) => {
+                        const input = document.createElement("input");
+                        input.type = "hidden";
+                        input.name = name;
+                        input.value = value;
+                        form.appendChild(input);
+                    };
+                    addInput(key, data.payload[key]);
+                });
+
+                document.body.appendChild(form);
+                form.submit();
             } else {
-                throw new Error("No redirect URL returned from UniPay API");
+                throw new Error("No payload returned from UniPay API");
             }
 
         } catch (error) {
