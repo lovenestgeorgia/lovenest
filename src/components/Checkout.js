@@ -51,7 +51,7 @@ export function Checkout() {
                 console.error("Failed to send Telegram notification:", notifyErr);
             }
 
-            // 2. Initiate Real Unipay Checkout Redirect
+            // 2. Initiate Real Unipay Checkout Redirect using V3 API
             const response = await fetch("/api/unipay/checkout", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -59,10 +59,24 @@ export function Checkout() {
             });
             const data = await response.json();
 
-            if (data.redirectUrl) {
-                window.location.href = data.redirectUrl;
+            if (data.success && data.unipayData) {
+                // Determine the correct field for the checkout URL based on standard Unipay responses
+                const redirectUrl =
+                    data.unipayData.CheckoutUrl ||
+                    data.unipayData.checkout_url ||
+                    data.unipayData.url ||
+                    data.unipayData.redirectUrl ||
+                    data.unipayData.redirect_url ||
+                    (data.unipayData.data && (data.unipayData.data.CheckoutUrl || data.unipayData.data.checkout_url || data.unipayData.data.url || data.unipayData.data.redirectUrl || data.unipayData.data.redirect_url));
+
+                if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                } else {
+                    console.error("Unipay V3 Success Response missing URL field:", data.unipayData);
+                    throw new Error("Missing checkout URL in UniPay response");
+                }
             } else {
-                throw new Error("No redirect URL returned from UniPay API");
+                throw new Error(data.error || "Failed to initiate UniPay checkout");
             }
 
         } catch (error) {
