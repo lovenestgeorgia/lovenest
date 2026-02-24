@@ -18,22 +18,24 @@ export async function POST(req) {
         const hashString = `${merchantId}|${amount}|${currency}|${orderId}|${apiKey}`;
         const hash = crypto.createHash('md5').update(hashString).digest("hex");
 
-        // Prepare the payload for Unipay API POST Form
-        const payload = {
-            MerchantID: merchantId,
-            OrderID: orderId,
-            Amount: amount,
-            Currency: currency,
-            Hash: hash,
-            SuccessRedirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/success`,
-            CancelRedirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/cancel`,
-            Language: "KA",
-        };
+        // Convert the payload object into query string parameters for a GET redirect
+        const queryParams = new URLSearchParams({
+            merchantId: merchantId,
+            orderId: orderId,
+            amount: amount,
+            hash: hash,
+            currency: currency,
+            language: "KA",
+            successRedirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/success`,
+            cancelRedirectUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/cancel`
+        }).toString();
 
-        // We return these details to the frontend so it can construct a hidden form and submit it to Unipay
+        // Target the legacy/default unipay transaction gateway
+        let redirectUrl = `https://unipay.com/checkout?${queryParams}`;
+
         return NextResponse.json({
             success: true,
-            actionUrl: "https://www.unipay.com/", // Unipay's unified checkout URL
+            redirectUrl,
             payload
         });
     } catch (error) {
