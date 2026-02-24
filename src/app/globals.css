@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Dachi The Lynx';
+  src: url('/fonts/dachi-the-lynx.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme inline {
+  /* Romantic / Elegant Colors */
+  --color-primary: #8a1f3b;
+  /* Deep romantic red/burgundy */
+  --color-primary-light: #b03052;
+  --color-secondary: #f4e8e1;
+  /* Soft blush beige */
+  --color-accent: #d4a373;
+  /* Elegant gold/tan */
+  --color-text-dark: #2c2c2c;
+  --color-text-mutted: #5a5a5a;
+  --color-bg-light: #faf9f6;
+  /* Off-white / Ivory */
+  --color-bg-white: #ffffff;
+
+  /* Typography */
+  --font-serif: 'Dachi The Lynx', serif;
+  --font-sans: 'Inter', sans-serif;
+
+  /* Shadows */
+  --shadow-elegant: 0 10px 40px -10px rgba(138, 31, 59, 0.1);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+:root {
+  --background: #faf9f6;
+  --foreground: #2c2c2c;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-serif);
+}
+
+.elegant-btn {
+  background-color: var(--color-primary);
+  color: white;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  padding: 0.875rem 2rem;
+  border-radius: 9999px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.elegant-btn:hover {
+  background-color: var(--color-primary-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-elegant);
+}
+
+.elegant-btn-outline {
+  background-color: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  font-family: var(--font-sans);
+  font-weight: 500;
+  padding: 0.875rem 2rem;
+  border-radius: 9999px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.elegant-btn-outline:hover {
+  background-color: var(--color-secondary);
+}
+
+/* Smooth fade in animation for page load */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.8s ease-out forwards;
+}
