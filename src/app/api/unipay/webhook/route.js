@@ -3,10 +3,14 @@ import { NextResponse } from "next/server";
 export async function POST(req) {
     try {
         const rawBody = await req.text();
-        // Parse Unipay webhook payload
-        const data = JSON.parse(rawBody);
-
-        // TODO: Verify Unipay signature here using the API secret key
+        let data;
+        try {
+            data = JSON.parse(rawBody);
+        } catch (e) {
+            // Unipay might be sending standard form-urlencoded data instead of pure JSON
+            const searchParams = new URLSearchParams(rawBody);
+            data = Object.fromEntries(searchParams.entries());
+        }
 
         // Process order (update DB to paid, send confirmation email, etc)
         console.log("Unipay Webhook received payment confirmation:", data);
