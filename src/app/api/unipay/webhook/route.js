@@ -2,6 +2,23 @@ import { NextResponse } from "next/server";
 
 export async function POST(req) {
     try {
+        const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+        const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+        // EMERGENCY LOG: Did Unipay even hit the webhook?
+        if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+            try {
+                await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        chat_id: TELEGRAM_CHAT_ID,
+                        text: "🚨 WEBHOOK TRIGGERED BY UNIPAY!"
+                    })
+                });
+            } catch (e) { }
+        }
+
         const rawBody = await req.text();
         let data;
         try {

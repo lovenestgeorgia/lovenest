@@ -8,9 +8,10 @@ export async function POST(req) {
         const merchantId = process.env.UNIPAY_MERCHANT_ID;
         const apiKey = process.env.UNIPAY_API_KEY;
 
-        const protocol = req.headers.get("x-forwarded-proto") || "http";
-        const host = req.headers.get("host") || "lovenest.ge";
-        const baseUrl = req.headers.get("origin") || process.env.NEXT_PUBLIC_BASE_URL || `${protocol}://${host}`;
+        const protocol = req.headers.get("x-forwarded-proto") || "https";
+        const host = req.headers.get("host") || "lovenest-eta.vercel.app";
+        // Force the production domain for the webhook callback
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://lovenest-eta.vercel.app";
 
         // Step 1: Authenticate with UniPay V3 API to get a Bearer token
         const authRes = await fetch("https://apiv2.unipay.com/v3/auth", {
