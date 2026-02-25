@@ -38,7 +38,7 @@ export async function POST(req) {
             OrderDescription: `USER::${name}::${phone}::${city}::${address}::${personalMessage || ''}`,
             SuccessRedirectUrl: Buffer.from(`${baseUrl}/success`).toString("base64"),
             CancelRedirectUrl: Buffer.from(`${baseUrl}/cancel`).toString("base64"),
-            CallBackUrl: Buffer.from(`${baseUrl}/api/unipay/webhook`).toString("base64"),
+            CallBackUrl: Buffer.from(`${baseUrl}/api/unipay/webhook.php`).toString("base64"),
             Language: "KA"
         };
 
