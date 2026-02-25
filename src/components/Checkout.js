@@ -65,12 +65,20 @@ export function Checkout() {
             if (data.success && data.unipayData) {
                 // Determine the correct field for the checkout URL based on standard Unipay responses
                 const redirectUrl =
+                    data.unipayData.Checkout ||
                     data.unipayData.CheckoutUrl ||
                     data.unipayData.checkout_url ||
                     data.unipayData.url ||
                     data.unipayData.redirectUrl ||
                     data.unipayData.redirect_url ||
-                    (data.unipayData.data && (data.unipayData.data.CheckoutUrl || data.unipayData.data.checkout_url || data.unipayData.data.url || data.unipayData.data.redirectUrl || data.unipayData.data.redirect_url));
+                    (data.unipayData.data && (
+                        data.unipayData.data.Checkout ||
+                        data.unipayData.data.CheckoutUrl ||
+                        data.unipayData.data.checkout_url ||
+                        data.unipayData.data.url ||
+                        data.unipayData.data.redirectUrl ||
+                        data.unipayData.data.redirect_url
+                    ));
 
                 if (redirectUrl) {
                     window.location.href = redirectUrl;
