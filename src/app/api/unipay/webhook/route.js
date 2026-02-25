@@ -36,18 +36,45 @@ export async function POST(req) {
             // Unipay usually sends Status or ErrorMessage
             const paymentStatus = data.Status || data.status || data.errorcode?.toString() || (data.IsSuccess ? "Success" : "Failed") || "Unknown";
 
-            // Send HTTP request to our internal API route
-            await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/notify`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    orderId: data.MerchantOrderId || "UNIPAY_TEST_ORDER",
-                    customerParams: customerParams,
-                    cartItems: [{ name: "წამიკითხე როცა დაგჭირდები", quantity: 1 }],
-                    totalAmount: data.OrderPrice || "39.00",
-                    status: paymentStatus
-                })
-            });
+            const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+            const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+            if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+                const isSuccess = paymentStatus.toLowerCase().includes("success");
+                const statusText = isSuccess ? "✅ წარმატებული გადახდა" : `❌ წარუმატებელი/უარყოფილი (${paymentStatus})`;
+                const titleEmoji = isSuccess ? "🌟" : "⚠️";
+
+                const message = `
+${titleEmoji} **ახალი შეტყობინება Lovenest.ge-დან!** ${titleEmoji}
+
+💳 **სტატუსი**: ${statusText}
+📦 **შეკვეთის ID**: #${data.MerchantOrderId || "UNIPAY_TEST_ORDER"}
+💰 **თანხა**: ${data.OrderPrice || "39.00"} ₾
+
+👤 **მომხმარებელი**: ${customerParams.name}
+📞 **ტელეფონი**: ${customerParams.phone}
+📍 **ქალაქი/მისამართი**: ${customerParams.city}, ${customerParams.address}
+💌 **პერსონალური გზავნილი**: ${customerParams.personalMessage || "არ არის მიუთითებული"}
+
+🛍️ **პროდუქტები**:
+- წამიკითხე როცა დაგჭირდები (x1)
+
+🚚 გთხოვთ დაამუშავოთ შეკვეთა რაც შეიძლება მალე!
+`;
+
+                const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+                await fetch(telegramUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        chat_id: TELEGRAM_CHAT_ID,
+                        text: message,
+                        parse_mode: "Markdown"
+                    }),
+                });
+            } else {
+                console.error("Missing Telegram env variables in Webhook.");
+            }
         } catch (botError) {
             console.error("Failed to trigger Telegram bot:", botError);
         }
