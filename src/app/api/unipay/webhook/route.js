@@ -38,7 +38,8 @@ export async function POST(req) {
             phone: "",
             city: "",
             address: "",
-            personalMessage: ""
+            personalMessage: "",
+            email: ""
         };
 
         if (data.OrderDescription && data.OrderDescription.startsWith("USER::")) {
@@ -49,6 +50,7 @@ export async function POST(req) {
                 customerParams.city = parts[3] || "";
                 customerParams.address = parts[4] || "";
                 customerParams.personalMessage = parts[5] || "";
+                if (parts.length >= 7) customerParams.email = parts[6] || "";
             }
         }
 
@@ -73,6 +75,7 @@ ${titleEmoji} **ახალი შეტყობინება Lovenest.ge-�
 💰 **თანხა**: ${data.OrderPrice || "39.00"} ₾
 
 👤 **მომხმარებელი**: ${customerParams.name}
+📧 **ელ.ფოსტა**: ${customerParams.email || "არ არის მითითებული"}
 📞 **ტელეფონი**: ${customerParams.phone}
 📍 **ქალაქი/მისამართი**: ${customerParams.city}, ${customerParams.address}
 💌 **პერსონალური გზავნილი**: ${customerParams.personalMessage || "არ არის მიუთითებული"}

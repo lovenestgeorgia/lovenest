@@ -35,7 +35,7 @@ export async function POST(req) {
             OrderPrice: typeof amount === 'number' ? amount.toFixed(2) : parseFloat(amount).toFixed(2),
             OrderCurrency: "GEL",
             OrderName: "Lovenest Book Order",
-            OrderDescription: `USER::${name}::${phone}::${city}::${address}::${personalMessage || ''}`,
+            OrderDescription: `USER::${name}::${phone}::${city}::${address}::${personalMessage || 'არასავალდებულო'}::${email || 'არასავალდებულო'}`,
             SuccessRedirectUrl: Buffer.from(`${baseUrl}/success`).toString("base64"),
             CancelRedirectUrl: Buffer.from(`${baseUrl}/cancel`).toString("base64"),
             CallBackUrl: Buffer.from(`${baseUrl}/api/unipay/webhook.php`).toString("base64"),
@@ -64,6 +64,44 @@ export async function POST(req) {
         if (!orderRes.ok) {
             console.error("Unipay Order Error:", orderData);
             return NextResponse.json({ success: false, error: orderData.message || "Payment gateway rejected the order." }, { status: orderRes.status });
+        }
+
+        // TEMP HACK: Send Telegram notification immediately upon checkout initiation
+        try {
+            const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+            const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+
+            if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+                const message = `
+⏳ **ახალი გადახდის მცდელობა** ⏳
+
+💳 **სტატუსი**: მომხმარებელი გადავიდა Unipay-ზე გადასახდელად...
+📦 **შეკვეთის ID**: #${orderId}
+💰 **თანხა**: ${typeof amount === 'number' ? amount.toFixed(2) : parseFloat(amount).toFixed(2)} ₾
+
+👤 **მომხმარებელი**: ${name}
+📧 **ელ.ფოსტა**: ${email || "არ არის მითითებული"}
+📞 **ტელეფონი**: ${phone}
+📍 **ქალაქი/მისამართი**: ${city}, ${address}
+💌 **პერსონალური გზავნილი**: ${personalMessage || "არ არის მითითებული"}
+
+🛍️ **პროდუქტები**:
+- წამიკითხე როცა დაგჭირდები (x1)
+
+⚠️ ეს არის ინიცირებული შეკვეთა. დაელოდეთ უნიფეის დასტურს.
+`;
+                await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        chat_id: TELEGRAM_CHAT_ID,
+                        text: message,
+                        parse_mode: "Markdown"
+                    })
+                });
+            }
+        } catch (e) {
+            console.error("Failed to send preliminary Telegram notification:", e);
         }
 
         // Return the full Unipay order data to the frontend so the client can extract the generated Checkout URL
