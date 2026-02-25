@@ -35,7 +35,7 @@ export async function POST(req) {
             OrderPrice: typeof amount === 'number' ? amount.toFixed(2) : parseFloat(amount).toFixed(2),
             OrderCurrency: "GEL",
             OrderName: "Lovenest Book Order",
-            OrderDescription: `Order ${orderId} by ${name} - ${phone}`,
+            OrderDescription: `USER::${name}::${phone}::${city}::${address}::${personalMessage || ''}`,
             SuccessRedirectUrl: Buffer.from(`${baseUrl}/success`).toString("base64"),
             CancelRedirectUrl: Buffer.from(`${baseUrl}/cancel`).toString("base64"),
             CallBackUrl: Buffer.from(`${baseUrl}/api/unipay/webhook`).toString("base64"),

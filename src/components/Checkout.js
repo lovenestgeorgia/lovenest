@@ -35,26 +35,7 @@ export function Checkout() {
             const orderId = `ORDER-${Date.now()}`;
             const total = getCartTotal();
 
-            // 1. Send Telegram Notification immediately (as a pre-payment log)
-            try {
-                const notifyRes = await fetch("/api/notify", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        orderId: orderId,
-                        customerParams: formData,
-                        cartItems: items,
-                        totalAmount: total.toFixed(2)
-                    })
-                });
-                if (!notifyRes.ok) {
-                    console.error("Telegram notification returned non-ok status:", notifyRes.status);
-                }
-            } catch (notifyErr) {
-                console.error("Failed to execute Telegram notification fetch:", notifyErr);
-            }
-
-            // 2. Initiate Real Unipay Checkout Redirect using V3 API
+            // 1. Initiate Real Unipay Checkout Redirect using V3 API
             const response = await fetch("/api/unipay/checkout", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

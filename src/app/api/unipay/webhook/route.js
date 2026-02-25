@@ -11,6 +11,26 @@ export async function POST(req) {
         // Process order (update DB to paid, send confirmation email, etc)
         console.log("Unipay Webhook received payment confirmation:", data);
 
+        // Extract details from OrderDescription
+        let customerParams = {
+            name: "მომხმარებელი",
+            phone: "",
+            city: "",
+            address: "",
+            personalMessage: ""
+        };
+
+        if (data.OrderDescription && data.OrderDescription.startsWith("USER::")) {
+            const parts = data.OrderDescription.split("::");
+            if (parts.length >= 6) {
+                customerParams.name = parts[1] || customerParams.name;
+                customerParams.phone = parts[2] || "";
+                customerParams.city = parts[3] || "";
+                customerParams.address = parts[4] || "";
+                customerParams.personalMessage = parts[5] || "";
+            }
+        }
+
         // Trigger our Telegram Notification script
         try {
             // Send HTTP request to our internal API route
@@ -19,15 +39,9 @@ export async function POST(req) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     orderId: data.MerchantOrderId || "UNIPAY_TEST_ORDER",
-                    customerParams: {
-                        firstname: "მომხმარებელი",
-                        lastname: "",
-                        phone: "სისტემიდან",
-                        city: "თბილისი",
-                        address: "გადმოცემული მონაცემები"
-                    },
-                    cartItems: [{ name: "წამიკითხე როცა დაგჭირდები", quantity: 1, price: 39 }],
-                    totalAmount: "39.00"
+                    customerParams: customerParams,
+                    cartItems: [{ name: "წამიკითხე როცა დაგჭირდები", quantity: 1 }],
+                    totalAmount: data.OrderPrice || "39.00"
                 })
             });
         } catch (botError) {
