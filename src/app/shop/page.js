@@ -10,7 +10,7 @@ const products = [
         id: "read-me-when",
         slug: "read-me",
         title: "წამიკითხე როცა დაგჭირდები",
-        price: 1.00,
+        price: 39.00,
         oldPrice: 65.00,
         image: "/hero.png",
         tag: "Bestseller",

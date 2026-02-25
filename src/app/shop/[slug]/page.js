@@ -26,7 +26,7 @@ export default function ProductPage({ params }) {
         addItem({
             id: "book-1",
             name: "წამიკითხე როცა დაგჭირდები",
-            price: 1.00,
+            price: 39.00,
             image: "/hero.png",
             quantity: 1
         });
