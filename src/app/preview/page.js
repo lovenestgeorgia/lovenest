@@ -42,25 +42,25 @@ const idealForData = [
     {
         title: "შეყვარებულისთვის",
         desc: "უთხარი ის, რასაც ხშირად ვერ ეუბნები. გაუზიარე შენი ყველაზე ღრმა გრძნობები უნიკალური გზით.",
-        image: "https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=600&auto=format&fit=crop",
+        image: "/ideal_lovers.jpg",
         gradient: "from-rose-600/90 to-pink-500/90"
     },
     {
         title: "მანძილზე სიყვარულისთვის",
         desc: "როცა მონატრება ყველაზე ძლიერია. ეს წიგნი ყოველთვის მის გვერდით იქნება, მაშინაც კი როცა შორს ხარ.",
-        image: "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?q=80&w=600&auto=format&fit=crop",
+        image: "/ideal_longdistance.jpg",
         gradient: "from-blue-600/90 to-indigo-500/90"
     },
     {
         title: "წლისთავისთვის",
         desc: "საუკეთესო საჩუქარი აღსანიშნავ დღეს. შეკრიბეთ თქვენი ყველაზე ტკბილი მოგონებები ერთად.",
-        image: "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?q=80&w=600&auto=format&fit=crop",
+        image: "/ideal_anniversary.jpg",
         gradient: "from-amber-600/90 to-orange-500/90"
     },
     {
         title: "მეგობრისთვის",
         desc: "რადგან მეგობრობაც დიდი სიყვარულია. აგრძნობინე შენს საუკეთესო მეგობარს, თუ რამდენს ნიშნავს შენთვის.",
-        image: "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?q=80&w=600&auto=format&fit=crop",
+        image: "/ideal_bestfriend.jpg",
         gradient: "from-emerald-600/90 to-teal-500/90"
     }
 ];
