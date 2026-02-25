@@ -33,6 +33,9 @@ export async function POST(req) {
 
         // Trigger our Telegram Notification script
         try {
+            // Unipay usually sends Status or ErrorMessage
+            const paymentStatus = data.Status || data.status || data.errorcode?.toString() || (data.IsSuccess ? "Success" : "Failed") || "Unknown";
+
             // Send HTTP request to our internal API route
             await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/notify`, {
                 method: "POST",
@@ -41,7 +44,8 @@ export async function POST(req) {
                     orderId: data.MerchantOrderId || "UNIPAY_TEST_ORDER",
                     customerParams: customerParams,
                     cartItems: [{ name: "წამიკითხე როცა დაგჭირდები", quantity: 1 }],
-                    totalAmount: data.OrderPrice || "39.00"
+                    totalAmount: data.OrderPrice || "39.00",
+                    status: paymentStatus
                 })
             });
         } catch (botError) {

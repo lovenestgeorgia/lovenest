@@ -6,13 +6,18 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "PLACEHOLDER_CHAT_ID";
 export async function POST(req) {
     try {
         const data = await req.json();
-        const { orderId, customerParams, cartItems, totalAmount } = data;
+        const { orderId, customerParams, cartItems, totalAmount, status } = data;
+
+        // Determine emoji and text based on status
+        const isSuccess = status && status.toLowerCase().includes("success");
+        const statusText = isSuccess ? "✅ წარმატებული გადახდა" : `❌ წარუმატებელი/უარყოფილი (${status || "უცნობი დეტალები"})`;
+        const titleEmoji = isSuccess ? "🌟" : "⚠️";
 
         // 1. Create message text
         const message = `
-🌟 **ახალი შეკვეთა გენერირდა Lovenest.ge-ზე!** 🌟
+${titleEmoji} **ახალი შეტყობინება Lovenest.ge-დან!** ${titleEmoji}
 
-💳 **სტატუსი**: წარმატებული გადახდა
+💳 **სტატუსი**: ${statusText}
 📦 **შეკვეთის ID**: #${orderId}
 💰 **თანხა**: ${totalAmount} ₾
 
