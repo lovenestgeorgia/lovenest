@@ -16,12 +16,13 @@ export async function POST(req) {
 📦 **შეკვეთის ID**: #${orderId}
 💰 **თანხა**: ${totalAmount} ₾
 
-👤 **მომხმარებელი**: ${customerParams.firstname} ${customerParams.lastname}
+👤 **მომხმარებელი**: ${customerParams.name}
 📞 **ტელეფონი**: ${customerParams.phone}
 📍 **ქალაქი/მისამართი**: ${customerParams.city}, ${customerParams.address}
+💌 **პერსონალური გზავნილი**: ${customerParams.personalMessage || "არ არის მიუთითებული"}
 
 🛍️ **პროდუქტები**:
-${cartItems.map(item => `- ${item.name} (x${item.quantity}) - ${item.price}₾`).join('\n')}
+${cartItems.map(item => `- ${item.name} (x${item.quantity})`).join('\n')}
 
 🚚 გთხოვთ დაამუშავოთ შეკვეთა რაც შეიძლება მალე!
 `;
