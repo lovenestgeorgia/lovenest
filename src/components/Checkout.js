@@ -35,6 +35,16 @@ export function Checkout() {
             const orderId = `ORDER-${Date.now()}`;
             const total = getCartTotal();
 
+            // Facebook Pixel: InitiateCheckout
+            if (typeof window !== 'undefined' && window.fbq) {
+                window.fbq('track', 'InitiateCheckout', {
+                    content_name: orderDetails,
+                    value: total,
+                    currency: 'GEL',
+                    num_items: items.reduce((sum, i) => sum + i.quantity, 0)
+                });
+            }
+
             // 1. Initiate Real Unipay Checkout Redirect using V3 API
             const response = await fetch("/api/unipay/checkout", {
                 method: "POST",

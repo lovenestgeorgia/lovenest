@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCartStore } from "@/store/cartStore";
 import { ChevronRight, Heart, Sparkles, Navigation, CheckCircle, Truck, Shield, Star, ThumbsUp, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,7 +22,29 @@ export default function ProductPage({ params }) {
     const [visibleReviews, setVisibleReviews] = useState(8);
     const { addItem, openCart } = useCartStore();
 
+    // Facebook Pixel: ViewContent
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.fbq) {
+            window.fbq('track', 'ViewContent', {
+                content_name: 'წამიკითხე როცა დაგჭირდები',
+                content_category: 'წიგნი',
+                content_type: 'product',
+                value: 39.00,
+                currency: 'GEL'
+            });
+        }
+    }, []);
+
     const handleAddToCart = () => {
+        // Facebook Pixel: AddToCart
+        if (typeof window !== 'undefined' && window.fbq) {
+            window.fbq('track', 'AddToCart', {
+                content_name: 'წამიკითხე როცა დაგჭირდები',
+                content_type: 'product',
+                value: 39.00,
+                currency: 'GEL'
+            });
+        }
         addItem({
             id: "book-1",
             name: "წამიკითხე როცა დაგჭირდები",

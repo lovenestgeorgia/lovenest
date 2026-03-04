@@ -1,0 +1,10 @@
+--- UNIPAY API V3 ERROR LOG ---
+Endpoint: POST https://apiv2.unipay.com/v3/api/order/create
+Merchant ID: 5015994027001
+API Key: 941088ff-465e-4021-bee8-8a1067d689ed
+
+STATUS CODE: 403 Forbidden
+
+ERROR RESPONSE FROM UNIPAY: "Invalid ability provided."
+-------------------------------
+Please grant this API Key "Order Creation" (Write / Full Access) permissions.
