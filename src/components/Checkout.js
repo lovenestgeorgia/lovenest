@@ -9,6 +9,8 @@ export function Checkout() {
     const { items, getCartTotal } = useCartStore();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState("cod"); // added for payment toggling
+    const [checkoutStatus, setCheckoutStatus] = useState("idle"); // idle or success
 
     const [formData, setFormData] = useState({
         name: "",
@@ -45,40 +47,61 @@ export function Checkout() {
                 });
             }
 
-            // 1. Initiate Real Unipay Checkout Redirect using V3 API
-            const response = await fetch("/api/unipay/checkout", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ...formData, amount: total, orderId: orderId }),
-            });
-            const data = await response.json();
+            if (paymentMethod === "cod") {
+                // Cash on Delivery Logic
+                const response = await fetch("/api/notify", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        orderId: orderId,
+                        customerParams: formData,
+                        cartItems: items,
+                        totalAmount: total.toFixed(2),
+                        status: "Success (Cash on Delivery)"
+                    }),
+                });
 
-            if (data.success && data.unipayData) {
-                // Determine the correct field for the checkout URL based on standard Unipay responses
-                const redirectUrl =
-                    data.unipayData.Checkout ||
-                    data.unipayData.CheckoutUrl ||
-                    data.unipayData.checkout_url ||
-                    data.unipayData.url ||
-                    data.unipayData.redirectUrl ||
-                    data.unipayData.redirect_url ||
-                    (data.unipayData.data && (
-                        data.unipayData.data.Checkout ||
-                        data.unipayData.data.CheckoutUrl ||
-                        data.unipayData.data.checkout_url ||
-                        data.unipayData.data.url ||
-                        data.unipayData.data.redirectUrl ||
-                        data.unipayData.data.redirect_url
-                    ));
-
-                if (redirectUrl) {
-                    window.location.href = redirectUrl;
+                if (response.ok) {
+                    setCheckoutStatus("success");
                 } else {
-                    console.error("Unipay V3 Success Response missing URL field:", data.unipayData);
-                    throw new Error("Missing checkout URL in UniPay response");
+                    throw new Error("Failed to process COD order");
                 }
             } else {
-                throw new Error(data.error || "Failed to initiate UniPay checkout");
+                // 1. Initiate Real Unipay Checkout Redirect using V3 API
+                const response = await fetch("/api/unipay/checkout", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ ...formData, amount: total, orderId: orderId }),
+                });
+                const data = await response.json();
+
+                if (data.success && data.unipayData) {
+                    // Determine the correct field for the checkout URL based on standard Unipay responses
+                    const redirectUrl =
+                        data.unipayData.Checkout ||
+                        data.unipayData.CheckoutUrl ||
+                        data.unipayData.checkout_url ||
+                        data.unipayData.url ||
+                        data.unipayData.redirectUrl ||
+                        data.unipayData.redirect_url ||
+                        (data.unipayData.data && (
+                            data.unipayData.data.Checkout ||
+                            data.unipayData.data.CheckoutUrl ||
+                            data.unipayData.data.checkout_url ||
+                            data.unipayData.data.url ||
+                            data.unipayData.data.redirectUrl ||
+                            data.unipayData.data.redirect_url
+                        ));
+
+                    if (redirectUrl) {
+                        window.location.href = redirectUrl;
+                    } else {
+                        console.error("Unipay V3 Success Response missing URL field:", data.unipayData);
+                        throw new Error("Missing checkout URL in UniPay response");
+                    }
+                } else {
+                    throw new Error(data.error || "Failed to initiate UniPay checkout");
+                }
             }
 
         } catch (error) {
@@ -94,6 +117,23 @@ export function Checkout() {
         { num: 2, title: "მიტანა", icon: MapPin },
         { num: 3, title: "გადახდა", icon: CreditCard }
     ];
+
+    if (checkoutStatus === "success") {
+        return (
+            <div className="bg-white p-12 rounded-2xl shadow-sm border border-rose-50 text-center space-y-6">
+                <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
+                    <Check size={40} />
+                </div>
+                <h2 className="text-3xl font-serif text-text-dark">შეკვეთა მიღებულია!</h2>
+                <p className="text-text-mutted max-w-sm mx-auto">
+                    თქვენი შეკვეთა წარმატებით გაფორმდა. თანხას გადაიხდით ამანათის ჩაბარებისას קურიერთან. ცოტა ხანში დაგიკავშირდებით დეტალების დასაზუსტებლად.
+                </p>
+                <div className="pt-6">
+                    <a href="/" className="elegant-btn inline-block">მთავარ გვერდზე დაბრუნება</a>
+                </div>
+            </div>
+        );
+    }
 
     if (items.length === 0) {
         return (
@@ -186,8 +226,36 @@ export function Checkout() {
                     {/* STEP 3: Payment Confirmation */}
                     {step === 3 && (
                         <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                            <h3 className="text-xl font-serif text-text-dark border-b border-rose-50 pb-2">შეკვეთის შეჯამება</h3>
-                            <div className="bg-rose-50/20 p-6 rounded-xl border border-rose-100 space-y-4">
+                            <h3 className="text-xl font-serif text-text-dark border-b border-rose-50 pb-2">გადახდის მეთოდი</h3>
+
+                            <div className="space-y-4">
+                                <label className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all ${paymentMethod === 'cod' ? 'border-primary bg-rose-50/10' : 'border-gray-200 hover:border-rose-200'}`}>
+                                    <input type="radio" className="mt-1 flex-shrink-0" name="paymentOption" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} />
+                                    <div>
+                                        <div className="font-medium text-text-dark flex items-center gap-2">
+                                            🚚 ნაღდი ანგარიშსწორება קურიერთან (Cash on Delivery)
+                                        </div>
+                                        <div className="text-sm text-text-mutted mt-1">
+                                            შეკვეთა მიღებულია, თქვენ გადაიხდით თანხას ამანათის ჩაბარებისას קურიერთან. 100% უსაფრთხოა.
+                                        </div>
+                                    </div>
+                                </label>
+
+                                <label className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all ${paymentMethod === 'unipay' ? 'border-primary bg-rose-50/10' : 'border-gray-200 hover:border-rose-200'}`}>
+                                    <input type="radio" className="mt-1 flex-shrink-0" name="paymentOption" value="unipay" checked={paymentMethod === 'unipay'} onChange={() => setPaymentMethod('unipay')} />
+                                    <div>
+                                        <div className="font-medium text-text-dark flex items-center gap-2">
+                                            💳 ბარათით / განვადებით გადახდა (Unipay)
+                                        </div>
+                                        <div className="text-sm text-text-mutted mt-1">
+                                            გადაიხადეთ უსაფრთხოდ ნებისმიერი ბანკის ბარათით ან ისარგებლეთ განვადებით.
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div className="bg-rose-50/20 p-6 rounded-xl border border-rose-100 space-y-4 mt-6">
+                                <h4 className="font-medium text-text-dark border-b border-rose-100 pb-2 mb-2">შეკვეთის შეჯამება</h4>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-text-mutted">მიმღები:</span>
                                     <span className="font-medium text-text-dark">{formData.name}</span>
@@ -224,7 +292,11 @@ export function Checkout() {
                         ) : step < 3 ? (
                             <>შემდეგი <ChevronRight size={18} /></>
                         ) : (
-                            <><CreditCard size={18} /> გადახდა Unipay-თ</>
+                            paymentMethod === 'cod' ? (
+                                <><Check size={18} /> შეკვეთის დასრულება</>
+                            ) : (
+                                <><CreditCard size={18} /> გადახდა Unipay-თ</>
+                            )
                         )}
                     </button>
                 </div>
