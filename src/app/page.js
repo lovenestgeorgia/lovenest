@@ -154,7 +154,7 @@ export default function Home() {
                 <div className="flex gap-0.5 text-yellow-500">
                   {[...Array(5)].map((_, i) => <Star key={i} size={16} className="fill-current" />)}
                 </div>
-                <span className="opacity-70">({reviews.length}+ ბედნიერი მომხმარებელი)</span>
+                <span className="opacity-70">(1000+ ბედნიერი მომხმარებელი)</span>
               </motion.div>
 
               <motion.p
@@ -176,8 +176,8 @@ export default function Home() {
                   <span className="font-semibold">შეიძინე 39 ₾</span>
                   <Sparkles size={18} className="ml-2 group-hover:rotate-12 transition-transform" />
                 </Link>
-                <Link href="#info" className="elegant-btn-outline text-lg w-full sm:w-auto justify-center">
-                  გაიგე მეტი
+                <Link href="#info" className="elegant-btn-outline text-lg w-full sm:w-auto justify-center flex items-center gap-2">
+                  გაიგე მეტი <ChevronDown size={18} />
                 </Link>
               </motion.div>
 
@@ -185,10 +185,9 @@ export default function Home() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
-                className="flex items-center gap-4 text-xs font-medium text-text-mutted pt-2"
+                className="flex flex-wrap items-center gap-4 text-xs font-semibold text-primary/80 pt-2 bg-rose-50/50 px-4 py-2 rounded-full border border-rose-100/50"
               >
-                <span className="flex items-center gap-1"><Truck size={14} className="text-primary" /> სწრაფი მიწოდება</span>
-                <span className="flex items-center gap-1"><Gift size={14} className="text-primary" /> სასაჩუქრე შეფუთვა</span>
+                <span className="flex items-center gap-1"><span className="relative flex h-2 w-2 mr-1"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span> მხოლოდ დღეს: უფასო სასაჩუქრე შეფუთვა 🎁</span>
               </motion.div>
             </div>
 
@@ -423,6 +422,38 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Product Details Section */}
+        <section className="py-20 px-6 bg-white border-b border-rose-50">
+          <div className="max-w-4xl mx-auto space-y-12">
+            <div className="text-center space-y-4">
+              <h2 className="text-3xl md:text-4xl font-serif text-text-dark">წიგნის დეტალები</h2>
+              <p className="text-text-mutted text-lg font-light">შეიქმნა უმაღლესი ხარისხის მასალებით, რათა თქვენი მოგონებები დიდხანს შენახულიყო</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+              <div className="flex items-start gap-4 p-6 rounded-2xl bg-rose-50/20 border border-rose-100">
+                <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-primary shrink-0">
+                  <BookOpen size={24} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-text-dark text-lg mb-1">მოცულობა და ზომა</h4>
+                  <p className="text-text-mutted text-sm">84 გვერდი დასაწერად, ზომები: 15x20 სმ (A5 ფორმატზე ოდნავ პატარა, იდეალურია ხელში დასაჭერად 🌸)</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4 p-6 rounded-2xl bg-rose-50/20 border border-rose-100">
+                <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-primary shrink-0">
+                  <Star size={24} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-text-dark text-lg mb-1">პრემიუმ ხარისხი</h4>
+                  <p className="text-text-mutted text-sm">მყარი, ლამინირებული ყდა ოქროსფერი ანაბეჭდებით და გაზრდილი სისქის (120გ) ფურცლებით, რომელზეც მელანი არ გადადის.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Social Proof / Reviews Preview */}
         <section className="py-24 px-6 bg-rose-50/20">
           <div className="max-w-6xl mx-auto">
@@ -453,7 +484,7 @@ export default function Home() {
 
             <div className="mt-12 text-center">
               <Link href="/shop/read-me" className="elegant-btn-outline inline-flex">
-                ნახეთ ყველა {reviews.length} შეფასება
+                ნახეთ 1000+ შეფასება
               </Link>
             </div>
           </div>
@@ -471,10 +502,14 @@ export default function Home() {
             <p className="text-gray-300 text-lg md:text-xl font-light max-w-xl mx-auto">
               შეუკვეთე დღესვე, დაწერე შენი გულწრფელი სიტყვები და აჩუქე ემოცია, რომელიც არასდროს დავიწყდება.
             </p>
-            <div className="pt-8">
+            <div className="pt-8 flex flex-col items-center">
               <Link href="/shop/read-me" className="inline-flex items-center justify-center gap-3 bg-white text-text-dark px-10 py-5 rounded-full text-xl font-medium hover:bg-rose-50 hover:scale-105 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)]">
                 შეიძინე ახლავე <Navigation size={20} className="text-primary rotate-45" />
               </Link>
+              <div className="mt-6 inline-flex items-center gap-2 text-sm text-white font-medium bg-white/10 px-5 py-2.5 rounded-full backdrop-blur-sm border border-white/20">
+                <Gift size={16} className="text-rose-300" />
+                <span><strong className="text-rose-300">მხოლოდ დღეს:</strong> უფასო სასაჩუქრე შეფუთვა</span>
+              </div>
             </div>
           </div>
         </section>
