@@ -6,7 +6,7 @@ import { CreditCard, Heart, MapPin, User, ChevronRight, Check } from "lucide-rea
 import { useCartStore } from "@/store/cartStore";
 
 export function Checkout() {
-    const { items, getCartTotal } = useCartStore();
+    const { items, getCartTotal, hasGiftBox, setGiftBox } = useCartStore();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState("cod"); // added for payment toggling
@@ -238,12 +238,12 @@ export function Checkout() {
                                     <input
                                         type="checkbox"
                                         id="giftBoxBump"
-                                        checked={useCartStore((state) => state.hasGiftBox)}
-                                        onChange={(e) => useCartStore.getState().setGiftBox(e.target.checked)}
+                                        checked={hasGiftBox}
+                                        onChange={(e) => setGiftBox(e.target.checked)}
                                         className="w-5 h-5 text-primary bg-white border-gray-300 rounded focus:ring-primary focus:ring-2 cursor-pointer"
                                     />
                                 </div>
-                                <div className="flex-1 z-10 cursor-pointer min-w-0" onClick={() => useCartStore.getState().setGiftBox(!useCartStore.getState().hasGiftBox)}>
+                                <div className="flex-1 z-10 cursor-pointer min-w-0" onClick={() => setGiftBox(!hasGiftBox)}>
                                     <label htmlFor="giftBoxBump" className="font-serif font-bold text-text-dark text-[14px] sm:text-base flex gap-1.5 sm:gap-2 cursor-pointer leading-tight">
                                         <span className="shrink-0 leading-tight">🎁</span>
                                         <span>დიახ, დამიმატეთ პრემიუმ სასაჩუქრე შეფუთვა! (+12.00 ₾)</span>
