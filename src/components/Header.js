@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { useCartStore } from "@/store/cartStore";
 import { ShoppingBag, User, Menu, X, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Countdown } from "@/components/Countdown";
+import { StickyTimer } from "@/components/StickyTimer";
 
 export function Header() {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -30,12 +30,7 @@ export function Header() {
                     }`}
             >
                 {/* Global Countdown Banner at the very top */}
-                <div className={`w-full bg-rose-50 border-b border-rose-100 transition-all duration-500 overflow-hidden flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-4 px-4 ${isScrolled ? "max-h-0 py-0 opacity-0" : "max-h-24 py-2 opacity-100"}`}>
-                    <span className="text-xs sm:text-sm font-medium text-text-dark flex items-center gap-1 shrink-0"><Heart size={14} className="text-primary fill-current" /> სპეციალური ფასი სრულდება:</span>
-                    <div className="scale-90 sm:scale-100 origin-center">
-                        <Countdown />
-                    </div>
-                </div>
+                <StickyTimer />
 
                 <div className={`max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between transition-all duration-300 ${isScrolled ? "py-3" : "py-5"}`}>
 

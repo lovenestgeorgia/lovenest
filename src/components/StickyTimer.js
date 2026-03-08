@@ -34,7 +34,7 @@ export function StickyTimer() {
     const seconds = timeLeft % 60;
 
     return (
-        <div className="bg-primary text-white py-2 px-3 sm:px-4 sticky top-0 z-50 shadow-md flex justify-center items-center gap-1.5 sm:gap-3 text-xs sm:text-sm md:text-base font-medium flex-wrap text-center">
+        <div className="bg-primary text-white py-2 px-3 sm:px-4 w-full relative z-50 shadow-md flex justify-center items-center gap-1.5 sm:gap-3 text-xs sm:text-sm md:text-base font-medium flex-wrap text-center">
             <span className="animate-pulse">🔥</span>
             <span>-40% ფასდაკლება სრულდება:</span>
             <div className="flex gap-1 items-center font-mono font-bold bg-white/20 px-1.5 sm:px-2 py-0.5 rounded shadow-inner whitespace-nowrap">

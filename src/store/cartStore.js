@@ -6,13 +6,10 @@ export const useCartStore = create(
         (set, get) => ({
             items: [],
             isOpen: false,
-            hasGiftBox: false,
 
             openCart: () => set({ isOpen: true }),
             closeCart: () => set({ isOpen: false }),
             toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
-
-            setGiftBox: (hasBox) => set({ hasGiftBox: hasBox }),
 
             addItem: (item) => {
                 set((state) => {
@@ -45,9 +42,7 @@ export const useCartStore = create(
             clearCart: () => set({ items: [] }),
 
             getCartTotal: () => {
-                const subtotal = get().items.reduce((total, item) => total + (item.price * item.quantity), 0);
-                const giftBoxPrice = get().hasGiftBox ? 12 : 0;
-                return subtotal + giftBoxPrice;
+                return get().items.reduce((total, item) => total + (item.price * item.quantity), 0);
             }
         }),
         {

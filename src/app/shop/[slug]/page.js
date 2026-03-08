@@ -7,7 +7,6 @@ import { useCartStore } from "@/store/cartStore";
 import { ChevronRight, Heart, Sparkles, Navigation, CheckCircle, Truck, Shield, Star, ThumbsUp, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Countdown } from "@/components/Countdown";
-import { FOMOToast } from "@/components/FOMOToast";
 import { reviews } from "@/data/reviews";
 
 const images = [
@@ -63,7 +62,6 @@ export default function ProductPage({ params }) {
 
     return (
         <div className="font-sans min-h-screen bg-bg-light relative overflow-hidden pb-32">
-            <FOMOToast />
 
             {/* Global Background Bloom */}
             <div className="fixed inset-0 pointer-events-none z-0">
