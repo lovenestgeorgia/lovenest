@@ -126,7 +126,7 @@ export function Checkout() {
                 </div>
                 <h2 className="text-3xl font-serif text-text-dark">შეკვეთა მიღებულია!</h2>
                 <p className="text-text-mutted max-w-sm mx-auto">
-                    თქვენი შეკვეთა წარმატებით გაფორმდა. თანხას გადაიხდით ამანათის ჩაბარებისას קურიერთან. ცოტა ხანში დაგიკავშირდებით დეტალების დასაზუსტებლად.
+                    თქვენი შეკვეთა წარმატებით გაფორმდა. თანხას გადაიხდით ამანათის ჩაბარებისას კურიერთან. ცოტა ხანში დაგიკავშირდებით დეტალების დასაზუსტებლად.
                 </p>
                 <div className="pt-6">
                     <a href="/" className="elegant-btn inline-block">მთავარ გვერდზე დაბრუნება</a>
@@ -233,10 +233,10 @@ export function Checkout() {
                                     <input type="radio" className="mt-1 flex-shrink-0" name="paymentOption" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} />
                                     <div>
                                         <div className="font-medium text-text-dark flex items-center gap-2">
-                                            🚚 ნაღდი ანგარიშსწორება קურიერთან (Cash on Delivery)
+                                            🚚 ნაღდი ანგარიშსწორება კურიერთან (Cash on Delivery)
                                         </div>
                                         <div className="text-sm text-text-mutted mt-1">
-                                            შეკვეთა მიღებულია, თქვენ გადაიხდით თანხას ამანათის ჩაბარებისას קურიერთან. 100% უსაფრთხოა.
+                                            შეკვეთა მიღებულია, თქვენ გადაიხდით თანხას ამანათის ჩაბარებისას კურიერთან. 100% უსაფრთხოა.
                                         </div>
                                     </div>
                                 </label>
