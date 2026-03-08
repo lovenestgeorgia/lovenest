@@ -416,10 +416,7 @@ export default function ProductPage({ params }) {
                                                     <span className="font-semibold text-text-dark bg-gray-50 px-3 py-1 rounded-md">3-5 სამუშაო დღე — 12 ₾</span>
                                                 </li>
                                             </ul>
-                                            <p className="mt-8 text-sm text-red-600 bg-red-50 p-4 rounded-xl border border-red-100 flex gap-3 text-center sm:text-left shadow-inner">
-                                                <CheckCircle size={20} className="shrink-0" />
-                                                სპეციალური აქცია: 70₾-ზე ზევით შენაძენზე მიტანა საქართველოს მასშტაბით სრულიად უფასოა!
-                                            </p>
+
                                         </div>
 
                                         <div className="bg-white p-8 sm:p-10 rounded-3xl border border-gray-100 shadow-lg flex flex-col justify-between">

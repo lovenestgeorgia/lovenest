@@ -102,7 +102,7 @@ export function Cart() {
                                     <ArrowRight size={18} />
                                 </Link>
                                 <div className="text-center mt-3 text-xs text-text-mutted space-y-1">
-                                    <p>მიტანა საქართველოს მასშტაბით უფასოა.</p>
+                                    <p>მიწოდება ხდება საქართველოს მასშტაბით.</p>
                                     <p>გადახდა დაცულია Unipay სისტემით.</p>
                                 </div>
                             </div>
