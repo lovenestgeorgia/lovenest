@@ -33,7 +33,11 @@ export function Checkout() {
 
         try {
             // Build order details string from cart
-            const orderDetails = items.map(i => `${i.name} (${i.quantity}x)`).join(", ");
+            let orderDetails = items.map(i => `${i.name} (${i.quantity}x)`).join(", ");
+            if (useCartStore.getState().hasGiftBox) {
+                orderDetails += " + 🎁 პრემიუმ ყუთი";
+            }
+
             const orderId = `ORDER-${Date.now()}`;
             const total = getCartTotal();
 
@@ -226,7 +230,31 @@ export function Checkout() {
                     {/* STEP 3: Payment Confirmation */}
                     {step === 3 && (
                         <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                            <h3 className="text-xl font-serif text-text-dark border-b border-rose-50 pb-2">გადახდის მეთოდი</h3>
+
+                            {/* Order Bump - Premium Gift Box */}
+                            <div className="bg-gradient-to-r from-amber-50 to-rose-50 border-2 border-amber-200/50 rounded-xl p-3 sm:p-5 flex items-start gap-3 sm:gap-4 shadow-sm relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/40 blur-2xl rounded-full group-hover:scale-150 transition-transform duration-1000"></div>
+                                <div className="pt-1 z-10 shrink-0">
+                                    <input
+                                        type="checkbox"
+                                        id="giftBoxBump"
+                                        checked={useCartStore((state) => state.hasGiftBox)}
+                                        onChange={(e) => useCartStore.getState().setGiftBox(e.target.checked)}
+                                        className="w-5 h-5 text-primary bg-white border-gray-300 rounded focus:ring-primary focus:ring-2 cursor-pointer"
+                                    />
+                                </div>
+                                <div className="flex-1 z-10 cursor-pointer min-w-0" onClick={() => useCartStore.getState().setGiftBox(!useCartStore.getState().hasGiftBox)}>
+                                    <label htmlFor="giftBoxBump" className="font-serif font-bold text-text-dark text-[14px] sm:text-base flex gap-1.5 sm:gap-2 cursor-pointer leading-tight">
+                                        <span className="shrink-0 leading-tight">🎁</span>
+                                        <span>დიახ, დამიმატეთ პრემიუმ სასაჩუქრე შეფუთვა! (+12.00 ₾)</span>
+                                    </label>
+                                    <p className="text-[11px] sm:text-sm text-text-mutted mt-1 sm:mt-1.5 leading-relaxed">
+                                        გააოცეთ ადრესატი! წიგნი მოთავსდება სპეციალურ მყარ ყუთში, სავსე დეკორატიული ბურბუშელითა და ბაფთით.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <h3 className="text-xl font-serif text-text-dark border-b border-rose-50 pb-2 mt-8">გადახდის მეთოდი</h3>
 
                             <div className="space-y-4">
                                 <label className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all ${paymentMethod === 'cod' ? 'border-primary bg-rose-50/10' : 'border-gray-200 hover:border-rose-200'}`}>

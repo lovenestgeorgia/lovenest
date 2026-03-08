@@ -14,9 +14,12 @@ const buyers = [
 const times = ["2 წუთის წინ", "5 წუთის წინ", "10 წუთის წინ", "ახლახანს", "1 წუთის წინ", "15 წუთის წინ"];
 
 export function FOMOToast() {
+    const [mounted, setMounted] = useState(false);
     const [toast, setToast] = useState(null);
 
     useEffect(() => {
+        setMounted(true);
+
         const triggerToast = () => {
             const randomBuyer = buyers[Math.floor(Math.random() * buyers.length)];
             const randomTime = times[Math.floor(Math.random() * times.length)];
@@ -29,18 +32,20 @@ export function FOMOToast() {
         };
 
         // First toast shortly after load
-        const firstTimeout = setTimeout(triggerToast, 2000);
+        const firstTimeout = setTimeout(triggerToast, 3500);
 
         // Then random intervals
         const interval = setInterval(() => {
             triggerToast();
-        }, 18000);
+        }, 25000);
 
         return () => {
             clearTimeout(firstTimeout);
             clearInterval(interval);
         };
     }, []);
+
+    if (!mounted) return null;
 
     return (
         <AnimatePresence>

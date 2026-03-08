@@ -4,6 +4,7 @@ import "./globals.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Cart } from "@/components/Cart";
+import { StickyTimer } from "@/components/StickyTimer";
 
 // Note: Dachi The Lynx is handled via pure CSS @font-face in globals.css
 // to prevent Next.js build errors when the actual font file is missing locally.
@@ -53,6 +54,7 @@ export default function RootLayout({ children }) {
         </noscript>
       </head>
       <body className={`font-dachi ${notoSansGeorgian.variable} font-sans antialiased selection:bg-rose-200 selection:text-rose-900 bg-bg-light flex flex-col min-h-screen`}>
+        <StickyTimer />
         <Header />
         <Cart />
         <main className="flex-1 w-full relative z-0">
