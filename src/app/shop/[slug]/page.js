@@ -1,463 +1,520 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { useCartStore } from "@/store/cartStore";
-import { ChevronRight, Heart, Sparkles, Navigation, CheckCircle, Truck, Shield, Star, ThumbsUp, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Heart, BookHeart, Sparkles, Star, Navigation, CheckCircle, Truck, Gift, ChevronDown, BookOpen } from "lucide-react";
 import { Countdown } from "@/components/Countdown";
 import { FOMOToast } from "@/components/FOMOToast";
 import { reviews } from "@/data/reviews";
 
-const images = [
-    "/hero.png",
-    "/product-1.png",
-    "/product-2.png"
+// Helper for 3D Tilt Effect
+function TiltCard({ children, className }) {
+  const [rotateX, setRotateX] = useState(0);
+  const [rotateY, setRotateY] = useState(0);
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left - rect.width / 2;
+    const y = e.clientY - rect.top - rect.height / 2;
+    setRotateX(-y / 15);
+    setRotateY(x / 15);
+  };
+
+  const handleMouseLeave = () => {
+    setRotateX(0);
+    setRotateY(0);
+  };
+
+  return (
+    <motion.div
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      animate={{ rotateX, rotateY }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      style={{ perspective: 1000 }}
+      className={`relative ${className}`}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+const idealForData = [
+  {
+    title: "შეყვარებულისთვის",
+    desc: "უთხარი ის, რასაც ხშირად ვერ ეუბნები. გაუზიარე შენი ყველაზე ღრმა გრძნობები უნიკალური გზით.",
+    image: "/ideal_lovers.jpg",
+    gradient: "from-rose-600/90 to-pink-500/90"
+  },
+  {
+    title: "მანძილზე სიყვარულისთვის",
+    desc: "როცა მონატრება ყველაზე ძლიერია. ეს წიგნი ყოველთვის მის გვერდით იქნება, მაშინაც კი როცა შორს ხარ.",
+    image: "/ideal_longdistance.jpg",
+    gradient: "from-blue-600/90 to-indigo-500/90"
+  },
+  {
+    title: "წლისთავისთვის",
+    desc: "საუკეთესო საჩუქარი აღსანიშნავ დღეს. შეკრიბეთ თქვენი ყველაზე ტკბილი მოგონებები ერთად.",
+    image: "/ideal_anniversary.jpg",
+    gradient: "from-amber-600/90 to-orange-500/90"
+  },
+  {
+    title: "მეგობრისთვის",
+    desc: "რადგან მეგობრობაც დიდი სიყვარულია. აგრძნობინე შენს საუკეთესო მეგობარს, თუ რამდენს ნიშნავს შენთვის.",
+    image: "/ideal_bestfriend.jpg",
+    gradient: "from-emerald-600/90 to-teal-500/90"
+  }
 ];
 
-export default function ProductPage({ params }) {
-    const [activeImage, setActiveImage] = useState(0);
-    const [activeTab, setActiveTab] = useState("reviews");
-    const [visibleReviews, setVisibleReviews] = useState(8);
-    const { addItem, openCart } = useCartStore();
+const faqs = [
+  {
+    q: "რამდენ ხანში ხდება მზადება და მოწოდება?",
+    a: "თბილისის მასშტაბით მიტანა ხდება შეკვეთიდან 1-2 სამუშაო დღეში. რეგიონებში მიწოდება სრულდება 3-4 სამუშაო დღის განმავლობაში."
+  },
+  {
+    q: "რას მოიცავს სასაჩუქრე შეფუთვა?",
+    a: "ყოველი წიგნი იფუთება პრემიუმ ხარისხის სასაჩუქრე ყუთში, ფორმდება ულამაზესი ლენტით და თან ერთვის ბარათი."
+  },
+  {
+    q: "როგორ ხდება თანხის გადახდა?",
+    a: "გადაიხადეთ უსაფრთხოდ ონლაინ (UniPay-ს გავლით), ან აირჩიეთ ნაღდი ანგარიშსწორება და თანხა გადაიხადეთ ამანათის ჩაბარებისას კურიერთან."
+  }
+];
 
-    // Facebook Pixel: ViewContent
-    useEffect(() => {
-        if (typeof window !== 'undefined' && window.fbq) {
-            window.fbq('track', 'ViewContent', {
-                content_name: 'წამიკითხე როცა დაგჭირდები',
-                content_category: 'წიგნი',
-                content_type: 'product',
-                value: 39.00,
-                currency: 'GEL'
-            });
-        }
-    }, []);
+export default function Home() {
+  // Select top 3 reviews for home page
+  const featuredReviews = reviews.slice(0, 3);
+  const [openFaq, setOpenFaq] = useState(0);
 
-    const handleAddToCart = () => {
-        // Facebook Pixel: AddToCart
-        if (typeof window !== 'undefined' && window.fbq) {
-            window.fbq('track', 'AddToCart', {
-                content_name: 'წამიკითხე როცა დაგჭირდები',
-                content_type: 'product',
-                value: 39.00,
-                currency: 'GEL'
-            });
-        }
-        addItem({
-            id: "book-1",
-            name: "წამიკითხე როცა დაგჭირდები",
-            price: 39.00,
-            image: "/hero.png",
-            quantity: 1
-        });
-        openCart();
-    };
+  return (
+    <div className="font-sans bg-bg-light relative overflow-hidden">
+      <FOMOToast />
 
-    const loadMoreReviews = () => {
-        setVisibleReviews(prev => Math.min(prev + 12, reviews.length));
-    };
+      {/* Global Animated Background Particles */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        {/* Top Right Pink Blob */}
+        <motion.div
+          animate={{ y: [0, -30, 0], x: [0, 20, 0], opacity: [0.3, 0.6, 0.3] }}
+          transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[-5%] right-[-5%] w-[500px] h-[500px] bg-rose-300/30 rounded-full blur-[100px]"
+        />
 
-    const averageRating = (reviews.reduce((acc, rev) => acc + rev.rating, 0) / reviews.length).toFixed(1);
+        {/* Bottom Left Amber Blob */}
+        <motion.div
+          animate={{ y: [0, 40, 0], x: [0, -30, 0], opacity: [0.3, 0.6, 0.3] }}
+          transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-amber-200/20 rounded-full blur-[120px]"
+        />
 
-    return (
-        <div className="font-sans min-h-screen bg-bg-light relative overflow-hidden pb-32">
-            <FOMOToast />
+        {/* Center Accent Blob */}
+        <motion.div
+          animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.3, 0.1] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          className="absolute top-[40%] left-[30%] w-[400px] h-[400px] bg-primary/10 rounded-full blur-[140px]"
+        />
+      </div>
 
-            {/* Global Background Bloom */}
-            <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-rose-200/20 rounded-full blur-[120px]"></div>
-                <div className="absolute bottom-[0%] left-[-10%] w-[600px] h-[600px] bg-amber-100/20 rounded-full blur-[100px]"></div>
-            </div>
+      <main className="relative z-10 pt-24 sm:pt-32">
+        {/* Hero Section */}
+        <section className="relative min-h-[85vh] flex items-center justify-center pb-12 px-6">
+          <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-rose-50 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
+          <div className="absolute bottom-[10%] left-[-10%] w-[500px] h-[500px] bg-secondary blur-3xl opacity-50 z-0 pointer-events-none"></div>
 
-            <div className="relative z-10 pt-28 sm:pt-36">
-                {/* Breadcrumbs */}
-                <nav className="max-w-6xl mx-auto px-6 mb-8 text-xs sm:text-sm text-text-mutted flex items-center gap-2">
-                    <Link href="/" className="hover:text-primary transition-colors">მთავარი</Link>
-                    <ChevronRight size={14} />
-                    <Link href="/shop" className="hover:text-primary transition-colors">მაღაზია</Link>
-                    <ChevronRight size={14} />
-                    <span className="text-primary font-medium cursor-default">წამიკითხე როცა...</span>
-                </nav>
+          <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center relative z-10">
 
-                <main className="max-w-7xl mx-auto px-4 sm:px-6">
+            {/* Text Content */}
+            <div className="order-2 lg:order-1 flex flex-col items-center lg:items-start text-center lg:text-left space-y-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 rounded-full text-primary font-medium text-xs border border-rose-100 shadow-sm"
+              >
+                <Star size={12} className="fill-current text-yellow-500" />
+                <span className="text-text-dark">ყველაზე პოპულარული სასაჩუქრე წიგნი</span>
+              </motion.div>
 
-                    <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 items-start">
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.1 }}
+                className="text-5xl md:text-6xl lg:text-7xl font-serif text-text-dark leading-[1.05]"
+              >
+                წამიკითხე <br /><span className="text-primary italic">როცა დაგჭირდები</span>
+              </motion.h1>
 
-                        {/* Left: Gallery (Sticky on Desktop) */}
-                        <div className="w-full lg:w-[45%] xl:w-[50%] flex flex-col-reverse md:flex-row gap-4 lg:sticky lg:top-32 relative z-10">
-                            {/* Thumbnails */}
-                            <div className="flex md:flex-col gap-3 sm:gap-4 overflow-x-auto md:overflow-visible pb-4 md:pb-0 scrollbar-hide w-full md:w-24 shrink-0">
-                                {images.map((img, idx) => (
-                                    <button
-                                        key={idx}
-                                        onClick={() => setActiveImage(idx)}
-                                        className={`relative w-20 h-24 sm:w-20 sm:h-28 lg:w-24 lg:h-32 rounded-2xl overflow-hidden border-2 transition-all shrink-0 bg-rose-50/50 shadow-sm ${activeImage === idx ? 'border-primary ring-4 ring-primary/20 scale-95 opacity-100' : 'border-transparent opacity-60 hover:opacity-100 hover:scale-[1.02]'}`}
-                                    >
-                                        <Image src={img} alt={`Thumbnail ${idx}`} fill sizes="(max-width: 768px) 100px, 150px" className="object-cover" />
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Main Image */}
-                            <motion.div
-                                key={activeImage}
-                                initial={{ opacity: 0, scale: 0.98, y: 10 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                transition={{ duration: 0.4 }}
-                                className="relative w-full aspect-[4/5] rounded-[2rem] overflow-hidden border border-rose-100 shadow-[0_20px_50px_rgba(0,0,0,0.08)] bg-rose-50/30 group cursor-crosshair"
-                            >
-                                <div className="absolute top-4 sm:top-6 left-4 sm:left-6 z-10 bg-white/95 backdrop-blur-md border border-rose-50 text-text-dark px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-bold shadow-sm flex items-center gap-2">
-                                    <span className="flex items-center gap-1 text-yellow-500"><Star size={16} className="fill-current" /> {averageRating}</span>
-                                    <span className="text-gray-300">|</span>
-                                    <span>{reviews.length} შეფასება</span>
-                                </div>
-                                <Image
-                                    src={images[activeImage]}
-                                    alt="წამიკითხე როცა დაგჭირდები"
-                                    fill
-                                    sizes="(max-width: 1024px) 100vw, 50vw"
-                                    className="object-cover object-center group-hover:scale-[1.15] transition-transform duration-700 ease-out origin-center"
-                                    priority
-                                />
-                            </motion.div>
-                        </div>
-
-                        {/* Right: Info */}
-                        <div className="w-full lg:w-[55%] xl:w-[50%] flex flex-col pt-4 lg:pt-0 pb-12 relative z-10">
-
-                            {/* Urgency Badge */}
-                            <motion.div
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-red-50/80 backdrop-blur-sm rounded-full text-red-600 font-bold text-xs sm:text-sm border border-red-200/50 w-fit mb-6 sm:mb-8 shadow-sm"
-                            >
-                                <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-red-500"></span>
-                                </span>
-                                მარაგი მკვეთრად იწურება! დარჩა მხოლოდ <span className="underline decoration-red-300 decoration-2">17 ცალი</span>
-                            </motion.div>
-
-                            <motion.h1
-                                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                                className="text-4xl sm:text-5xl md:text-6xl font-serif text-text-dark leading-[1.1] mb-6"
-                            >
-                                წამიკითხე <br className="hidden sm:block" /> <span className="text-primary italic font-light sm:block sm:mt-2 h-auto">როცა დაგჭირდები</span>
-                            </motion.h1>
-
-                            <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-8 sm:mb-10 text-xs sm:text-sm bg-white/50 border border-rose-50 w-fit px-4 py-2 rounded-2xl shadow-sm">
-                                <div className="flex items-center gap-1 text-yellow-500 cursor-pointer" onClick={() => setActiveTab("reviews")}>
-                                    {[...Array(5)].map((_, i) => <Star key={i} size={16} className="fill-current" />)}
-                                    <span className="text-text-dark font-medium ml-1 underline underline-offset-4 decoration-rose-200 hover:decoration-primary transition-colors">({reviews.length} შეფასება)</span>
-                                </div>
-                                <span className="w-1 h-1 rounded-full bg-rose-200"></span>
-                                <span className="text-green-600 font-bold flex items-center gap-1.5"><CheckCircle size={16} /> მარაგშია (გასაგზავნად მზადაა)</span>
-                            </div>
-
-                            {/* Price Block */}
-                            <div className="mb-8 flex flex-col gap-1">
-                                <div className="flex items-end gap-3 sm:gap-4">
-                                    <span className="text-5xl sm:text-6xl font-serif text-text-dark font-medium tracking-tight">39.00 <span className="text-3xl">₾</span></span>
-                                    <span className="text-lg sm:text-xl text-text-mutted line-through font-sans font-light mb-2 opacity-60">65.00 ₾</span>
-                                    <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-md mb-3 ml-2 border border-green-200">-40% ფასდაკლება</span>
-                                </div>
-                                <p className="text-xs text-text-mutted flex items-center gap-1.5"><Shield size={12} /> ყველა გადასახადი შედის ფასში.</p>
-                            </div>
-
-                            {/* Countdown Integration */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-                                className="mb-10 p-5 sm:p-6 bg-gradient-to-br from-rose-50/80 to-amber-50/80 backdrop-blur-sm shadow-[inset_0_2px_20px_rgba(255,255,255,0.9)] rounded-[2rem] border-2 border-white relative overflow-hidden group"
-                            >
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/40 blur-3xl rounded-full group-hover:scale-150 transition-transform duration-1000"></div>
-                                <Countdown />
-                                <p className="text-xs sm:text-sm text-text-dark font-medium mt-3 pl-1 flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                                    იჩქარეთ! საჩუქრად შეფუთვა აქციის ფარგლებში <strong className="text-primary">სრულიად უფასოა</strong>.
-                                </p>
-                            </motion.div>
-
-                            <p className="text-text-dark font-light leading-relaxed mb-10 text-base sm:text-lg lg:text-xl md:pr-4">
-                                <strong className="font-semibold font-serif text-primary text-xl">84 გვერდიანი უნიკალური საჩუქარი.</strong> <br /><br />
-                                თქვენ თავად ავსებთ თითოეულ გვერდს სხვადასხვა ემოციით, საერთო ფოტოებითა და თბილი სიტყვებით,
-                                რათა საყვარელმა ადამიანმა ზუსტად საჭირო მომენტში წაიკითხოს ისინი.
-                            </p>
-
-                            <button
-                                onClick={handleAddToCart}
-                                className="elegant-btn w-full py-5 sm:py-6 text-xl sm:text-2xl relative overflow-hidden group shadow-[0_15px_40px_rgba(169,27,13,0.25)] hover:shadow-[0_20px_50px_rgba(169,27,13,0.35)] transition-all mb-4 hover:-translate-y-1 rounded-3xl"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-primary via-rose-600 to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                                <span className="relative z-10 flex items-center justify-center gap-3 font-serif tracking-wide">
-                                    დაამატე კალათაში <Sparkles size={24} className="group-hover:rotate-12 group-hover:scale-110 transition-transform" />
-                                </span>
-                                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out z-0"></div>
-                            </button>
-
-                            <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-text-mutted mb-12 sm:mb-16 bg-gray-50/50 py-3 rounded-2xl border border-gray-100">
-                                <Lock size={14} className="text-green-600" /> უსაფრთხო გადახდა UniPay-ით. 100% დაბრუნების გარანტია.
-                            </div>
-
-                            {/* Advanced Animated Features List */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-6 pt-10 border-t border-rose-100/50">
-                                {[
-                                    { icon: CheckCircle, title: "პრემიუმ ხარისხი", desc: "მკვრივი, 120 გრამიანი კრემისფერი ქაღალდი", delay: 0 },
-                                    { icon: Heart, title: "უნიკალური ემოცია", desc: "შექმნილია სპეციალურად ქართულად", delay: 0.1 },
-                                    { icon: Truck, title: "სწრაფი მიწოდება", desc: "1-2 სამუშაო დღე თბილისში, 2-4 რეგიონში", delay: 0.2 },
-                                    { icon: Sparkles, title: "მზა შეფუთვა", desc: "მოდის ულამაზეს სასაჩუქრე ყუთში", delay: 0.3 }
-                                ].map((feature, idx) => (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 10 }}
-                                        whileInView={{ opacity: 1, y: 0 }}
-                                        viewport={{ once: true }}
-                                        transition={{ delay: feature.delay }}
-                                        key={idx}
-                                        className="flex gap-4 sm:gap-5 group"
-                                    >
-                                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white shadow-sm border border-rose-50 flex items-center justify-center shrink-0 text-primary group-hover:bg-primary group-hover:text-white group-hover:scale-110 group-hover:-rotate-6 transition-all duration-300">
-                                            <feature.icon size={22} className="sm:hidden block" />
-                                            <feature.icon size={24} className="hidden sm:block" />
-                                        </div>
-                                        <div className="flex flex-col justify-center">
-                                            <h4 className="font-serif font-bold text-text-dark text-sm sm:text-base mb-1 group-hover:text-primary transition-colors">{feature.title}</h4>
-                                            <p className="text-xs sm:text-sm text-text-mutted leading-snug">{feature.desc}</p>
-                                        </div>
-                                    </motion.div>
-                                ))}
-                            </div>
-
-                        </div>
-                    </div>
-                </main>
-
-                {/* Full-Width Visual Break Section (Deepens the page) */}
-                <section className="mt-20 sm:mt-32 w-full bg-text-dark text-white py-16 sm:py-24 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-transparent pointer-events-none mix-blend-overlay"></div>
-                    <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
-                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif leading-tight mb-8">
-                            ემოცია, რომელიც არასდროს <span className="text-rose-300 italic">დავიწყდება</span>
-                        </h2>
-                        <p className="text-gray-300 sm:text-lg md:text-xl font-light leading-relaxed max-w-2xl mx-auto mb-10">
-                            წიგნის თითოეულ გვერდზე შექმენით ახალი მოგონება.
-                            ეს არ არის მხოლოდ ნივთი, ეს არის თქვენი გრძნობების არქივი,
-                            რომელსაც თქვენი საყვარელი ადამიანი მთელი ცხოვრება შეინახავს.
-                        </p>
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-gray-400">
-                            <span className="flex items-center gap-2"><div className="w-10 h-10 rounded-full border border-gray-600 flex items-center justify-center"><Navigation size={18} className="rotate-45" /></div> ემოციური და პრაქტიკული</span>
-                            <span className="flex items-center gap-2"><div className="w-10 h-10 rounded-full border border-gray-600 flex items-center justify-center"><Heart size={18} /></div> უსაზღვრო სიყვარული</span>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Tabs Section */}
-                <main className="max-w-6xl mx-auto px-4 sm:px-6">
-                    <div className="mt-20 sm:mt-24 pt-8" id="details-tabs">
-                        <div className="flex flex-wrap gap-2 md:gap-6 lg:gap-12 justify-center mb-16 px-2 bg-white/50 backdrop-blur-md sticky top-[72px] sm:top-24 z-30 py-4 border-b border-rose-100 shadow-sm rounded-3xl mx-auto w-fit">
-                            {['reviews', 'description', 'shipping'].map((tab) => (
-                                <button
-                                    key={tab}
-                                    onClick={() => {
-                                        setActiveTab(tab);
-                                        window.scrollTo({ top: document.getElementById("details-tabs").offsetTop - 120, behavior: 'smooth' });
-                                    }}
-                                    className={`py-2 px-3 sm:px-6 text-sm sm:text-base lg:text-lg font-serif transition-colors relative rounded-full ${activeTab === tab ? 'text-white font-medium bg-text-dark shadow-md' : 'text-text-mutted hover:text-text-dark hover:bg-gray-100'}`}
-                                >
-                                    {tab === 'reviews' && `შეფასებები (${reviews.length})`}
-                                    {tab === 'description' && 'წიგნის შესახებ'}
-                                    {tab === 'shipping' && 'მიწოდება & გადახდა'}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="max-w-4xl mx-auto min-h-[400px]">
-                            <AnimatePresence mode="wait">
-
-                                {/* Reviews Tab */}
-                                {activeTab === "reviews" && (
-                                    <motion.div
-                                        key="reviews"
-                                        initial={{ opacity: 0, scale: 0.98 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.98 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="space-y-12"
-                                    >
-                                        <div className="flex flex-col md:flex-row gap-8 items-center justify-between bg-rose-50/30 p-8 rounded-3xl border border-rose-50">
-                                            <div className="text-center md:text-left">
-                                                <h3 className="text-5xl md:text-6xl font-serif text-text-dark mb-2">{averageRating}</h3>
-                                                <div className="flex text-yellow-500 justify-center md:justify-start mb-2">
-                                                    {[...Array(5)].map((_, i) => <Star key={i} size={24} className="fill-current" />)}
-                                                </div>
-                                                <p className="text-sm text-text-mutted font-medium">დაფუძნებულია {reviews.length} შეფასებაზე</p>
-                                            </div>
-
-                                            <div className="flex-1 w-full max-w-sm space-y-3">
-                                                {/* Mock Rating Bars */}
-                                                <div className="flex items-center gap-3 text-sm"><span className="w-3 text-text-mutted font-bold">5</span><div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-yellow-500 w-[90%] rounded-full"></div></div><span className="w-8 text-right text-text-mutted">63</span></div>
-                                                <div className="flex items-center gap-3 text-sm"><span className="w-3 text-text-mutted font-bold">4</span><div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-yellow-400 w-[10%] rounded-full"></div></div><span className="w-8 text-right text-text-mutted">7</span></div>
-                                                <div className="flex items-center gap-3 text-sm"><span className="w-3 text-text-mutted font-bold">3</span><div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-yellow-300 w-[0%] rounded-full"></div></div><span className="w-8 text-right text-text-mutted">0</span></div>
-                                                <div className="flex items-center gap-3 text-sm"><span className="w-3 text-text-mutted font-bold">2</span><div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-yellow-200 w-[0%] rounded-full"></div></div><span className="w-8 text-right text-text-mutted">0</span></div>
-                                                <div className="flex items-center gap-3 text-sm"><span className="w-3 text-text-mutted font-bold">1</span><div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-yellow-100 w-[0%] rounded-full"></div></div><span className="w-8 text-right text-text-mutted">0</span></div>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            {reviews.slice(0, visibleReviews).map((review) => (
-                                                <div key={review.id} className="p-6 sm:p-8 bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col hover:shadow-lg transition-shadow">
-                                                    <div className="flex justify-between items-start mb-6">
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center text-primary font-bold text-lg border border-rose-100">
-                                                                {review.name.charAt(0)}
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-semibold text-text-dark text-base flex items-center gap-1.5">
-                                                                    {review.name} <CheckCircle size={14} className="text-green-500" />
-                                                                </p>
-                                                                <p className="text-xs text-text-mutted mt-0.5">{review.date}</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex text-yellow-500 mb-4">
-                                                        {[...Array(review.rating)].map((_, i) => <Star key={i} size={16} className="fill-current" />)}
-                                                    </div>
-                                                    <p className="text-text-dark text-sm sm:text-base leading-relaxed mb-6 flex-1 font-serif italic">"{review.text}"</p>
-                                                    <div className="flex items-center gap-2 text-xs text-text-mutted cursor-pointer hover:text-primary mt-auto pt-4 border-t border-gray-50 uppercase tracking-widest font-semibold transition-colors">
-                                                        <ThumbsUp size={16} /> <span>სასარგებლო</span>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        {visibleReviews < reviews.length && (
-                                            <div className="text-center pt-8">
-                                                <button onClick={loadMoreReviews} className="elegant-btn-outline py-4 px-10 text-lg rounded-full">
-                                                    ჩატვირთე მეტი მიმოხილვა
-                                                </button>
-                                            </div>
-                                        )}
-                                    </motion.div>
-                                )}
-
-                                {/* Description Tab */}
-                                {activeTab === "description" && (
-                                    <motion.div
-                                        key="description"
-                                        initial={{ opacity: 0, scale: 0.98 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.98 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="prose prose-rose prose-lg sm:prose-xl max-w-none text-text-dark font-light leading-relaxed px-4"
-                                    >
-                                        <p className="text-lg sm:text-2xl font-serif text-center mb-12">
-                                            <span className="text-primary text-4xl leading-none block mb-4">"</span>
-                                            წამიკითხე როცა დაგჭირდები არის არა უბრალოდ წიგნი, არამედ სიყვარულის არქივი,
-                                            რომელიც ინახავს თქვენს ყველაზე სანუკვარ გრძნობებს.
-                                            <span className="text-primary text-4xl leading-none block mt-4">"</span>
-                                        </p>
-
-                                        <h3 className="text-2xl font-serif text-text-dark mt-16 mb-6">როგორ მუშაობს? საუკეთესო ემოციები 4 მარტივ ნაბიჯში</h3>
-                                        <div className="space-y-6">
-                                            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex gap-6 items-start">
-                                                <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center shrink-0 font-serif text-xl text-primary font-bold">1</div>
-                                                <div><strong className="block text-lg mb-2">შეუკვეთეთ და მიიღეთ წიგნი</strong> იღებთ წიგნს ცარიელი, მაგრამ თემატურად დაყოფილი 84 გვერდით.</div>
-                                            </div>
-                                            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex gap-6 items-start">
-                                                <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center shrink-0 font-serif text-xl text-primary font-bold">2</div>
-                                                <div><strong className="block text-lg mb-2">შეავსეთ ფურცლები</strong> წერთ მოგონებებს, ხატავთ, აკრავთ ფოტოებს. თითოეულ გვერდს სხვადასხვა სათაური აქვს (მაგ: "როცა მოწყენილი ხარ").</div>
-                                            </div>
-                                            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex gap-6 items-start">
-                                                <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center shrink-0 font-serif text-xl text-primary font-bold">3</div>
-                                                <div><strong className="block text-lg mb-2">აჩუქეთ საყვარელ ადამიანს</strong> გადაეცით საჩუქარი ულამაზეს სასაჩუქრე შეფუთვაში.</div>
-                                            </div>
-                                            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex gap-6 items-start">
-                                                <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center shrink-0 font-serif text-xl text-primary font-bold">4</div>
-                                                <div><strong className="block text-lg mb-2">გადაშალე საჭირო მომენტში</strong> ადრესატი კითხულობს კონკრეტულ ემოციას ზუსტად იმ დროს, როცა მას ჭირდება!</div>
-                                            </div>
-                                        </div>
-
-                                        <h3 className="text-2xl font-serif text-text-dark mt-16 mb-6">ტექნიკური მახასიათებლები</h3>
-                                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 list-none p-0">
-                                            <li className="bg-rose-50/50 p-6 rounded-2xl"><strong>გვერდები:</strong> <br /><span className="text-xl">84 გვერდი</span></li>
-                                            <li className="bg-rose-50/50 p-6 rounded-2xl"><strong>ყდა:</strong> <br /><span className="text-xl">Soft-touch მაგარი ყდა, ოქროსფერი პრინტით</span></li>
-                                            <li className="bg-rose-50/50 p-6 rounded-2xl"><strong>ქაღალდი:</strong> <br /><span className="text-xl">120 გრ. პრემიუმ კრემისფერი ქაღალდი</span></li>
-                                            <li className="bg-rose-50/50 p-6 rounded-2xl"><strong>ზომა:</strong> <br /><span className="text-xl">15 x 21 სმ (A5)</span></li>
-                                        </ul>
-                                    </motion.div>
-                                )}
-
-                                {/* Shipping Tab */}
-                                {activeTab === "shipping" && (
-                                    <motion.div
-                                        key="shipping"
-                                        initial={{ opacity: 0, scale: 0.98 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.98 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="grid grid-cols-1 md:grid-cols-2 gap-8"
-                                    >
-                                        <div className="bg-white p-8 sm:p-10 rounded-3xl border border-gray-100 shadow-lg">
-                                            <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center text-primary mb-6"><Truck size={32} /></div>
-                                            <h3 className="text-2xl font-serif text-text-dark mb-6">მიწოდების პირობები</h3>
-                                            <ul className="space-y-6 text-base text-text-mutted font-light">
-                                                <li className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 pb-4 border-b border-gray-100">
-                                                    <span className="text-gray-500">თბილისი:</span>
-                                                    <span className="font-semibold text-text-dark bg-gray-50 px-3 py-1 rounded-md">1 სამუშაო დღე — 6 ₾</span>
-                                                </li>
-                                                <li className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 pb-4 border-b border-gray-100">
-                                                    <span className="text-gray-500">რეგიონი (ქალაქი):</span>
-                                                    <span className="font-semibold text-text-dark bg-gray-50 px-3 py-1 rounded-md">2-3 სამუშაო დღე — 8 ₾</span>
-                                                </li>
-                                                <li className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 pb-4 border-b border-gray-100">
-                                                    <span className="text-gray-500">რეგიონი (სოფელში):</span>
-                                                    <span className="font-semibold text-text-dark bg-gray-50 px-3 py-1 rounded-md">3-5 სამუშაო დღე — 12 ₾</span>
-                                                </li>
-                                            </ul>
-                                            <p className="mt-8 text-sm text-red-600 bg-red-50 p-4 rounded-xl border border-red-100 flex gap-3 text-center sm:text-left shadow-inner">
-                                                <CheckCircle size={20} className="shrink-0" />
-                                                სპეციალური აქცია: 70₾-ზე ზევით შენაძენზე მიტანა საქართველოს მასშტაბით სრულიად უფასოა!
-                                            </p>
-                                        </div>
-
-                                        <div className="bg-white p-8 sm:p-10 rounded-3xl border border-gray-100 shadow-lg flex flex-col justify-between">
-                                            <div>
-                                                <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center text-primary mb-6"><Shield size={32} /></div>
-                                                <h3 className="text-2xl font-serif text-text-dark mb-6">გადახდა & დაცვა</h3>
-                                                <div className="space-y-4 text-base text-text-mutted font-light leading-relaxed">
-                                                    <p>ჩვენ ვიყენებთ <strong>UniPay</strong>-ს გადახდების უსაფრთხო სისტემას 256-bit დაშიფვრით. თქვენი ბარათის მონაცემები სრულიად დაცულია.</p>
-                                                    <p>გადახდა შესაძლებელია ნებისმიერი ბანკის <strong>Visa, Mastercard ან Amex</strong> ბარათით. ადგილზე მიტანისას თანხის გადახდა არ ხდება.</p>
-                                                    <p className="bg-green-50 text-green-700 p-4 rounded-xl mt-4 border border-green-100 shadow-inner">
-                                                        <strong>100% ხარისხის გარანტია!</strong> თუ ნივთს აღმოაჩნდება ქარხნული დეფექტი, იგი შეიცვლება სრულიად უფასოდ ან დაგიბრუნდებათ გადახდილი თანხა 2 დღის განმავლობაში.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    </div>
-                </main>
-
-            </div>
-
-            {/* Mobile Sticky Add to Cart Footer */}
-            <div className="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-md border-t border-rose-100 p-4 z-50 transform translate-y-0 lg:hidden shadow-[0_-20px_40px_rgba(0,0,0,0.08)]">
-                <div className="flex justify-between items-center max-w-lg mx-auto">
-                    <div className="flex flex-col">
-                        <span className="text-xs text-text-mutted line-through leading-none pb-1">65.00 ₾</span>
-                        <span className="text-2xl font-serif text-text-dark font-bold leading-none">39.00 ₾</span>
-                    </div>
-                    <button
-                        onClick={handleAddToCart}
-                        className="elegant-btn py-4 px-8 text-base shadow-lg shadow-rose-200 flex items-center gap-2 rounded-2xl"
-                    >
-                        ყიდვა <Navigation size={16} className="rotate-45" />
-                    </button>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.15 }}
+                className="flex items-center gap-2 text-sm font-medium text-text-dark"
+              >
+                <div className="flex gap-0.5 text-yellow-500">
+                  {[...Array(5)].map((_, i) => <Star key={i} size={16} className="fill-current" />)}
                 </div>
+                <span className="opacity-70">(1000+ ბედნიერი მომხმარებელი)</span>
+              </motion.div>
+
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="text-lg md:text-xl text-text-mutted max-w-lg font-light leading-relaxed"
+              >
+                84 გვერდში ჩატეული სიყვარული. დაუტოვე შენს საყვარელ ადამიანს შენი სიტყვები ზუსტად იმ მომენტებისთვის, როცა ეს ყველაზე მეტად დასჭირდება.
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+                className="flex flex-col sm:flex-row gap-4 pt-4 w-full sm:w-auto"
+              >
+                <Link href="/shop/read-me" className="elegant-btn text-lg group w-full sm:w-auto justify-center shadow-lg shadow-rose-200">
+                  <span className="font-semibold">შეიძინე 39 ₾</span>
+                  <Sparkles size={18} className="ml-2 group-hover:rotate-12 transition-transform" />
+                </Link>
+                <Link href="#info" className="elegant-btn-outline text-lg w-full sm:w-auto justify-center flex items-center gap-2">
+                  გაიგე მეტი <ChevronDown size={18} />
+                </Link>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="flex flex-wrap items-center gap-4 text-xs font-semibold text-primary/80 pt-2 bg-rose-50/50 px-4 py-2 rounded-full border border-rose-100/50"
+              >
+                <span className="flex items-center gap-1"><span className="relative flex h-2 w-2 mr-1"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span> მხოლოდ დღეს: უფასო სასაჩუქრე შეფუთვა 🎁</span>
+              </motion.div>
             </div>
 
-        </div>
-    );
+            {/* Image Content */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className="order-1 lg:order-2 relative w-full flex justify-center lg:justify-end"
+            >
+              <div className="relative w-full max-w-md aspect-[4/5] sm:aspect-[3/4]">
+                {/* Decorative border */}
+                <div className="absolute inset-0 border-2 border-primary/20 rounded-[2rem] transform translate-x-4 translate-y-4"></div>
+
+                {/* Main Hero Image */}
+                <div className="absolute inset-0 rounded-[2rem] overflow-hidden shadow-2xl group cursor-pointer border border-rose-100">
+                  <Image
+                    src="/hero.png"
+                    alt="წამიკითხე როცა დაგჭირდები - წიგნი"
+                    fill
+                    className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                    priority
+                  />
+
+                  {/* Floating Action Badge */}
+                  <div className="absolute bottom-6 right-6 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-rose-50 flex items-center gap-2 animate-bounce-slow">
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>
+                    <span className="text-xs font-bold text-text-dark">მარაგი იწურება!</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* SECTION 1: IDEAL FOR (PREMIUM 3D CARDS) */}
+        <section className="relative z-10 max-w-7xl mx-auto space-y-40 px-6 mt-12 mb-32">
+          <div className="text-center mb-20 space-y-6">
+            <motion.div
+              initial={{ scale: 0 }}
+              whileInView={{ scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ type: "spring", stiffness: 200 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-rose-50 border border-rose-100 shadow-sm text-primary font-bold text-sm"
+            >
+              <Heart size={16} className="fill-current animate-pulse" /> ემოცია ყველასთვის
+            </motion.div>
+            <h2 className="text-4xl md:text-6xl font-serif text-text-dark leading-tight">
+              ვისთვის არის <br /><span className="text-primary italic">იდეალური?</span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {idealForData.map((item, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ delay: idx * 0.15, duration: 0.8, type: "spring" }}
+              >
+                <TiltCard className="h-[450px] rounded-[2.5rem] overflow-hidden group cursor-pointer shadow-xl hover:shadow-2xl hover:shadow-primary/20 transition-all">
+                  <div className="absolute inset-0 z-0">
+                    <Image
+                      src={item.image}
+                      alt={item.title}
+                      fill
+                      className="object-cover transition-transform duration-1000 group-hover:scale-125"
+                    />
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent z-10 transition-opacity duration-500 group-hover:opacity-0" />
+                  <div className={`absolute inset-0 bg-gradient-to-t ${item.gradient} opacity-0 group-hover:opacity-90 transition-opacity duration-500 z-10`} />
+                  <div className="absolute inset-0 rounded-[2.5rem] border-2 border-white/0 group-hover:border-white/40 transition-colors duration-500 z-30 pointer-events-none" />
+                  <div className="absolute inset-0 p-8 flex flex-col justify-end z-20 text-white transform transition-transform duration-500">
+                    <motion.div className="translate-y-8 group-hover:translate-y-0 transition-all duration-500">
+                      <h3 className="text-2xl font-serif font-bold mb-3 drop-shadow-md">{item.title}</h3>
+                      <p className="opacity-0 group-hover:opacity-100 transition-all duration-500 delay-100 font-medium text-sm leading-relaxed text-white/95">
+                        {item.desc}
+                      </p>
+                      <div className="mt-5 w-10 h-1 bg-white/50 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-500 delay-200 transform origin-left group-hover:scale-x-150" />
+                    </motion.div>
+                  </div>
+                </TiltCard>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* SECTION 2: HOW IT WORKS (DYNAMIC PATH ANIMATION) */}
+        <section className="relative py-24 my-20">
+          <div className="absolute inset-0 bg-white/40 backdrop-blur-xl border-y border-white shadow-[0_8px_32px_rgba(0,0,0,0.04)] z-0"></div>
+          <div className="relative z-10 max-w-5xl mx-auto px-6 py-16">
+            <div className="text-center mb-24 space-y-4">
+              <h2 className="text-4xl md:text-5xl font-serif text-text-dark">როგორ მუშაობს</h2>
+              <p className="text-text-mutted text-lg font-light">სამი მარტივი ნაბიჯი დაუვიწყარი ემოციისკენ</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-16 relative">
+              <div className="hidden md:block absolute top-[40px] left-[15%] right-[15%] h-[2px] bg-rose-100 z-0 overflow-hidden">
+                <motion.div
+                  initial={{ x: "-100%" }}
+                  whileInView={{ x: "100%" }}
+                  viewport={{ once: false }}
+                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                  className="w-full h-full bg-gradient-to-r from-transparent via-primary to-transparent"
+                />
+              </div>
+
+              <motion.div whileHover={{ y: -10 }} className="relative z-10 flex flex-col items-center text-center group">
+                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-text-dark shadow-xl border border-rose-100 mb-8 relative">
+                  <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl group-hover:bg-primary/40 transition-colors opacity-0 group-hover:opacity-100" />
+                  <BookOpen size={30} className="text-primary relative z-10 group-hover:scale-110 transition-transform" />
+                </div>
+                <h3 className="text-xl font-bold text-text-dark mb-4 group-hover:text-primary transition-colors">1. აირჩიე წიგნი</h3>
+                <p className="text-text-mutted font-light leading-relaxed">
+                  შეარჩიე საუკეთესო სასაჩუქრე წიგნი, რომელიც ინახავს შენს სიტყვებს.
+                </p>
+              </motion.div>
+
+              <motion.div whileHover={{ y: -10 }} className="relative z-10 flex flex-col items-center text-center group">
+                <div className="w-20 h-20 bg-gradient-to-br from-primary to-rose-600 rounded-full flex items-center justify-center text-white shadow-[0_0_30px_rgba(2fb,113,133,0.4)] mb-8 relative">
+                  <div className="absolute -inset-2 rounded-full border border-primary/30 animate-[spin_4s_linear_infinite]" />
+                  <Sparkles size={30} className="relative z-10 group-hover:rotate-12 transition-transform" />
+                </div>
+                <h3 className="text-xl font-bold text-text-dark mb-4 group-hover:text-primary transition-colors">2. ჩვენ ვამზადებთ</h3>
+                <p className="text-text-mutted font-light leading-relaxed">
+                  ჩვენ ვამზადებთ და ვფუთავთ საჩუქარს განსაკუთრებული სიყვარულით და ესთეტიკით.
+                </p>
+              </motion.div>
+
+              <motion.div whileHover={{ y: -10 }} className="relative z-10 flex flex-col items-center text-center group">
+                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-text-dark shadow-xl border border-rose-100 mb-8 relative">
+                  <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl group-hover:bg-primary/40 transition-colors opacity-0 group-hover:opacity-100" />
+                  <Heart size={30} className="text-primary relative z-10 group-hover:scale-110 transition-transform" />
+                </div>
+                <h3 className="text-xl font-bold text-text-dark mb-4 group-hover:text-primary transition-colors">3. აჩუქე ემოცია</h3>
+                <p className="text-text-mutted font-light leading-relaxed">
+                  შეავსე ფურცლები შენი გრძნობებით და უყურე მათ ბედნიერ რეაქციას.
+                </p>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION 3: FAQ (PREMIUM GLASS ACCORDION) */}
+        <section className="relative z-10 max-w-3xl mx-auto pb-32 px-6">
+          <div className="text-center mb-16 space-y-4">
+            <h2 className="text-4xl md:text-5xl font-serif text-text-dark">გაქვთ კითხვები?</h2>
+            <p className="text-text-mutted text-lg font-light">ჩვენ აქ ვართ რომ დაგეხმაროთ</p>
+          </div>
+
+          <div className="space-y-4">
+            {faqs.map((faq, idx) => (
+              <motion.div
+                key={idx}
+                initial={false}
+                animate={{ backgroundColor: openFaq === idx ? "rgba(255, 255, 255, 0.9)" : "rgba(255, 255, 255, 0.4)" }}
+                className={`rounded-2xl border backdrop-blur-sm overflow-hidden transition-colors duration-300 ${openFaq === idx ? 'border-primary shadow-lg shadow-rose-100/50' : 'border-white hover:border-rose-200'}`}
+              >
+                <button
+                  onClick={() => setOpenFaq(openFaq === idx ? -1 : idx)}
+                  className="w-full px-8 py-6 flex items-center justify-between text-left group"
+                >
+                  <span className={`font-bold text-lg md:text-xl transition-colors duration-300 ${openFaq === idx ? 'text-primary' : 'text-text-dark group-hover:text-primary'}`}>
+                    {faq.q}
+                  </span>
+                  <motion.div
+                    animate={{ rotate: openFaq === idx ? 180 : 0, backgroundColor: openFaq === idx ? "rgb(251, 113, 133)" : "transparent" }}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-colors border ${openFaq === idx ? 'border-primary text-white' : 'border-gray-200 text-text-mutted group-hover:border-primary group-hover:text-primary'}`}
+                  >
+                    <ChevronDown size={20} />
+                  </motion.div>
+                </button>
+
+                <AnimatePresence>
+                  {openFaq === idx && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.4, ease: "easeInOut" }}
+                    >
+                      <div className="px-8 pb-8 text-lg text-text-mutted font-light leading-relaxed">
+                        {faq.a}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* Value Proposition & Informational Section */}
+        <section id="info" className="py-24 px-6 bg-white border-y border-rose-50">
+          <div className="max-w-5xl mx-auto text-center space-y-16">
+            <div className="space-y-4">
+              <p className="text-primary font-medium tracking-widest text-sm uppercase">რატომ ეს წიგნი?</p>
+              <h2 className="text-3xl md:text-5xl font-serif text-text-dark leading-tight">
+                არ არის უბრალოდ ნივთი, <br />ეს საუკეთესო <span className="text-primary italic">ემოციაა</span>
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-left">
+              <div className="bg-rose-50/30 p-8 rounded-3xl border border-rose-50 hover:shadow-md transition-shadow">
+                <div className="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary mb-6">
+                  <BookHeart size={28} />
+                </div>
+                <h3 className="text-xl font-serif font-bold mb-3">მხოლოდ თქვენი ისტორია</h3>
+                <p className="text-text-mutted text-sm leading-relaxed">წიგნის 84-ვე გვერდს ავსებთ თქვენი სიტყვებით, მოგონებებითა და გრძნობებით, რაც საჩუქარს 100%-ით უნიკალურს ხდის.</p>
+              </div>
+
+              <div className="bg-amber-50/30 p-8 rounded-3xl border border-amber-50 hover:shadow-md transition-shadow">
+                <div className="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center text-accent mb-6">
+                  <Heart size={28} />
+                </div>
+                <h3 className="text-xl font-serif font-bold mb-3">დროში გაყინული გრძნობა</h3>
+                <p className="text-text-mutted text-sm leading-relaxed">განსხვავებით ჩვეულებრივი საჩუქრებისგან, თქვენი სიტყვები სამუდამოდ რჩება და ყოველ გადაშლაზე თავიდან აცოცხლებს ემოციას.</p>
+              </div>
+
+              <div className="bg-rose-50/30 p-8 rounded-3xl border border-rose-50 hover:shadow-md transition-shadow">
+                <div className="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary mb-6">
+                  <CheckCircle size={28} />
+                </div>
+                <h3 className="text-xl font-serif font-bold mb-3">დაუვიწყარი რეაქცია</h3>
+                <p className="text-text-mutted text-sm leading-relaxed">ამ საჩუქრის მიღებისას გაჩენილი ემოცია, სიხარულის ცრემლები და ბედნიერება ნამდვილად შეუფასებელია ნებისმიერი ადამიანისთვის.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Product Details Section */}
+        <section className="py-20 px-6 bg-white border-b border-rose-50">
+          <div className="max-w-4xl mx-auto space-y-12">
+            <div className="text-center space-y-4">
+              <h2 className="text-3xl md:text-4xl font-serif text-text-dark">წიგნის დეტალები</h2>
+              <p className="text-text-mutted text-lg font-light">შეიქმნა უმაღლესი ხარისხის მასალებით, რათა თქვენი მოგონებები დიდხანს შენახულიყო</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+              <div className="flex items-start gap-4 p-6 rounded-2xl bg-rose-50/20 border border-rose-100">
+                <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-primary shrink-0">
+                  <BookOpen size={24} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-text-dark text-lg mb-1">მოცულობა და ზომა</h4>
+                  <p className="text-text-mutted text-sm">84 გვერდი დასაწერად, ზომები: 15x20 სმ (A5 ფორმატზე ოდნავ პატარა, იდეალურია ხელში დასაჭერად 🌸)</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4 p-6 rounded-2xl bg-rose-50/20 border border-rose-100">
+                <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-primary shrink-0">
+                  <Star size={24} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-text-dark text-lg mb-1">პრემიუმ ხარისხი</h4>
+                  <p className="text-text-mutted text-sm">მყარი, ლამინირებული ყდა ოქროსფერი ანაბეჭდებით და გაზრდილი სისქის (120გ) ფურცლებით, რომელზეც მელანი არ გადადის.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Social Proof / Reviews Preview */}
+        <section className="py-24 px-6 bg-rose-50/20">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-16 space-y-4">
+              <h2 className="text-3xl md:text-5xl font-serif text-text-dark">მყიდველები ამბობენ</h2>
+              <p className="text-text-mutted">ნახეთ, რას წერენ ისინი, ვინც უკვე აჩუქა სიყვარული</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {featuredReviews.map((review) => (
+                <div key={review.id} className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col">
+                  <div className="flex text-yellow-500 mb-4">
+                    {[...Array(review.rating)].map((_, i) => <Star key={i} size={16} className="fill-current" />)}
+                  </div>
+                  <p className="text-text-dark text-lg font-serif italic mb-6 flex-1">"{review.text}"</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                      {review.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm text-text-dark">{review.name}</p>
+                      <p className="text-xs text-text-mutted">{review.date}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-12 text-center">
+              <Link href="/shop/read-me" className="elegant-btn-outline inline-flex">
+                ნახეთ 1000+ შეფასება
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA */}
+        <section className="py-32 px-6 bg-text-dark rounded-t-[3rem] text-white relative overflow-hidden">
+          {/* Subtle gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent pointer-events-none"></div>
+
+          <div className="max-w-3xl mx-auto text-center relative z-10 space-y-8">
+            <h2 className="text-4xl md:text-6xl font-serif leading-tight">
+              ნუ გადადებ სიყვარულის <br /><span className="italic text-rose-200">გამოხატვას</span>
+            </h2>
+            <p className="text-gray-300 text-lg md:text-xl font-light max-w-xl mx-auto">
+              შეუკვეთე დღესვე, დაწერე შენი გულწრფელი სიტყვები და აჩუქე ემოცია, რომელიც არასდროს დავიწყდება.
+            </p>
+            <div className="pt-8 flex flex-col items-center">
+              <Link href="/shop/read-me" className="inline-flex items-center justify-center gap-3 bg-white text-text-dark px-10 py-5 rounded-full text-xl font-medium hover:bg-rose-50 hover:scale-105 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)]">
+                შეიძინე ახლავე <Navigation size={20} className="text-primary rotate-45" />
+              </Link>
+              <div className="mt-6 inline-flex items-center gap-2 text-sm text-white font-medium bg-white/10 px-5 py-2.5 rounded-full backdrop-blur-sm border border-white/20">
+                <Gift size={16} className="text-rose-300" />
+                <span><strong className="text-rose-300">მხოლოდ დღეს:</strong> უფასო სასაჩუქრე შეფუთვა</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  );
 }
