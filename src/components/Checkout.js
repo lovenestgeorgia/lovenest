@@ -245,10 +245,10 @@ export function Checkout() {
                                     <input type="radio" className="mt-1 flex-shrink-0" name="paymentOption" value="unipay" checked={paymentMethod === 'unipay'} onChange={() => setPaymentMethod('unipay')} />
                                     <div>
                                         <div className="font-medium text-text-dark flex items-center gap-2">
-                                            💳 ბარათით / განვადებით გადახდა (Unipay)
+                                            💳 ბარათით გადახდა (Unipay)
                                         </div>
                                         <div className="text-sm text-text-mutted mt-1">
-                                            გადაიხადეთ უსაფრთხოდ ნებისმიერი ბანკის ბარათით ან ისარგებლეთ განვადებით.
+                                            გადაიხადეთ უსაფრთხოდ ნებისმიერი ბანკის ბარათით.
                                         </div>
                                     </div>
                                 </label>
