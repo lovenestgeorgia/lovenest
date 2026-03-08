@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Timer } from "lucide-react";
 
 export function StickyTimer() {
     const [timeLeft, setTimeLeft] = useState(0);
@@ -16,12 +15,17 @@ export function StickyTimer() {
     }, []);
 
     useEffect(() => {
-        if (timeLeft <= 0) return;
         const timer = setInterval(() => {
-            setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    return 0;
+                }
+                return prev - 1;
+            });
         }, 1000);
         return () => clearInterval(timer);
-    }, [timeLeft]);
+    }, []);
 
     if (!isVisible || timeLeft === 0) return null;
 
