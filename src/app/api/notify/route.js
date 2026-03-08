@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
+import { google } from 'googleapis';
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "PLACEHOLDER_TOKEN";
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || "PLACEHOLDER_CHAT_ID";
+
+// Google Sheets Credentials from Environment
+const GOOGLE_CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
+const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID;
 
 export async function POST(req) {
     try {
@@ -10,7 +16,7 @@ export async function POST(req) {
 
         // Determine emoji and text based on status
         const isSuccess = status && status.toLowerCase().includes("success");
-        const statusText = isSuccess ? "✅ წარმატებული გადახდა" : `❌ წარუმატებელი/უარყოფილი (${status || "უცნობი დეტალები"})`;
+        const statusText = isSuccess ? "✅ წარმატებული" : `❌ უარყოფილი (${status || "უცნობი"})`;
         const titleEmoji = isSuccess ? "🌟" : "⚠️";
 
         // 1. Create message text
@@ -50,8 +56,53 @@ ${cartItems.map(item => `- ${item.name} (x${item.quantity})`).join('\n')}
             console.log("Telegram notification skipped: No Token Configured", message);
         }
 
-        // NOTE: For Email integration (if needed), you would use nodemailer here 
-        // to send an SMTP email. Telegram is usually enough and much faster for immediate alerts.
+        // 3. Send to Google Sheets
+        if (GOOGLE_CLIENT_EMAIL && GOOGLE_PRIVATE_KEY && GOOGLE_SHEET_ID) {
+            try {
+                const auth = new google.auth.GoogleAuth({
+                    credentials: {
+                        client_email: GOOGLE_CLIENT_EMAIL,
+                        private_key: GOOGLE_PRIVATE_KEY,
+                    },
+                    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+                });
+
+                const sheets = google.sheets({ version: 'v4', auth });
+
+                // Format data for sheet
+                const dateNum = new Date().toLocaleString("ka-GE", { timeZone: "Asia/Tbilisi" });
+                const itemsStr = cartItems.map(item => `${item.name} (x${item.quantity})`).join(', ');
+                const methodStr = status && status.toLowerCase().includes("cash on delivery") ? "Cash on Delivery" : "Unipay";
+
+                const rowData = [
+                    dateNum,
+                    orderId || "",
+                    customerParams.name || "",
+                    `'${customerParams.phone || ""}`,
+                    customerParams.city || "",
+                    customerParams.address || "",
+                    itemsStr,
+                    methodStr,
+                    `${totalAmount} ₾`,
+                    statusText,
+                    customerParams.personalMessage || ""
+                ];
+
+                await sheets.spreadsheets.values.append({
+                    spreadsheetId: GOOGLE_SHEET_ID,
+                    range: 'Sheet1!A:K',
+                    valueInputOption: 'USER_ENTERED',
+                    requestBody: {
+                        values: [rowData],
+                    },
+                });
+                console.log("Successfully appended to Google Sheets");
+            } catch (sheetError) {
+                console.error("Google Sheets Error:", sheetError);
+            }
+        } else {
+            console.log("Google Sheets notification skipped: Missing env variables");
+        }
 
         return NextResponse.json({ success: true });
 
