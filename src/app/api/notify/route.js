@@ -88,15 +88,24 @@ ${cartItems.map(item => `- ${item.name} (x${item.quantity})`).join('\n')}
                     customerParams.personalMessage || ""
                 ];
 
+                // Get spreadsheet details to extract the exact name of the first tab
+                const spreadsheetResponse = await sheets.spreadsheets.get({
+                    spreadsheetId: GOOGLE_SHEET_ID,
+                });
+
+                // Use the title of the first sheet
+                const firstSheetTitle = spreadsheetResponse.data.sheets[0].properties.title;
+                const rangeName = `'${firstSheetTitle}'!A:K`;
+
                 await sheets.spreadsheets.values.append({
                     spreadsheetId: GOOGLE_SHEET_ID,
-                    range: 'Sheet1!A:K',
+                    range: rangeName,
                     valueInputOption: 'USER_ENTERED',
                     requestBody: {
                         values: [rowData],
                     },
                 });
-                console.log("Successfully appended to Google Sheets");
+                console.log("Successfully appended to Google Sheets in tab:", firstSheetTitle);
             } catch (sheetError) {
                 console.error("Google Sheets Error:", sheetError);
             }
