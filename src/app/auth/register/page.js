@@ -12,7 +12,6 @@ export default function RegisterPage() {
     const [form, setForm] = useState({ firstName: "", lastName: "", phone: "", email: "", password: "" });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -20,7 +19,7 @@ export default function RegisterPage() {
         setError(null);
         try {
             const supabase = getSupabaseBrowser();
-            const { data, error } = await supabase.auth.signUp({
+            const { error } = await supabase.auth.signUp({
                 email: form.email,
                 password: form.password,
                 options: {
@@ -29,38 +28,17 @@ export default function RegisterPage() {
                         last_name: form.lastName,
                         phone: form.phone,
                     },
-                    emailRedirectTo:
-                        typeof window !== "undefined"
-                            ? `${window.location.origin}/auth/callback?next=/comic`
-                            : undefined,
                 },
             });
             if (error) throw error;
-            if (data.session) {
-                router.push("/comic");
-                router.refresh();
-            } else {
-                setNeedsConfirmation(true);
-            }
+            router.push("/comic");
+            router.refresh();
         } catch (err) {
             setError(err.message || "რეგისტრაცია ვერ მოხერხდა");
         } finally {
             setLoading(false);
         }
     };
-
-    if (needsConfirmation) {
-        return (
-            <div className="min-h-[80vh] flex items-center justify-center font-sans pt-40 sm:pt-44 pb-16 px-6 bg-rose-50/20">
-                <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-rose-100 p-10 text-center space-y-4">
-                    <h1 className="text-2xl font-serif text-text-dark">ანგარიში შექმნილია!</h1>
-                    <p className="text-text-mutted">
-                        გამოგზავნილია დასტურის წერილი <strong>{form.email}</strong>-ზე. შემოწმეთ თქვენი ფოსტა.
-                    </p>
-                </div>
-            </div>
-        );
-    }
 
     const onChange = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
