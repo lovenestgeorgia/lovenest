@@ -29,6 +29,32 @@ export async function POST(req) {
             data = Object.fromEntries(searchParams.entries());
         }
 
+        // If this is a comic order (sentinel COMIC::), forward to the comic webhook.
+        // This catches the case where UniPay's merchant dashboard has a project-level
+        // default callback URL that overrides our per-request CallBackUrl.
+        const desc = data.OrderDescription || data.orderDescription || "";
+        if (desc.startsWith("COMIC::")) {
+            console.log("Forwarding comic order to /api/comic/unipay/webhook");
+            const proto = req.headers.get("x-forwarded-proto") || "https";
+            const host = req.headers.get("host");
+            const forwardUrl = `${proto}://${host}/api/comic/unipay/webhook`;
+            try {
+                const res = await fetch(forwardUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                });
+                const body = await res.text();
+                return new NextResponse(body, {
+                    status: res.status,
+                    headers: { "Content-Type": "application/json" },
+                });
+            } catch (err) {
+                console.error("Failed to forward comic webhook:", err);
+                return NextResponse.json({ error: "forward failed" }, { status: 500 });
+            }
+        }
+
         // Process order (update DB to paid, send confirmation email, etc)
         console.log("Unipay Webhook received payment confirmation:", data);
 

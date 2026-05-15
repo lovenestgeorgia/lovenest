@@ -279,6 +279,50 @@ export default function Home() {
           </div>
         </section>
 
+        {/* AI Comic Generator Teaser */}
+        <section className="relative z-10 max-w-6xl mx-auto px-6 mb-32">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="relative rounded-[2.5rem] overflow-hidden bg-gradient-to-br from-text-dark via-text-dark to-primary/40 text-white p-8 md:p-12 shadow-2xl"
+          >
+            <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-transparent pointer-events-none" />
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+              <div className="space-y-5">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 rounded-full text-rose-200 font-medium text-xs border border-white/20 backdrop-blur-sm">
+                  <Sparkles size={12} /> ახალი — AI გენერატორი
+                </span>
+                <h2 className="text-3xl md:text-5xl font-serif leading-tight">
+                  შენი ისტორია — <br />
+                  <span className="italic text-rose-200">პერსონალური კომიქსი</span>
+                </h2>
+                <p className="text-gray-300 leading-relaxed">
+                  გვიამბე ისტორია, ატვირთე ფოტოები, აირჩიე სტილი. AI შენთვის შექმნის უნიკალურ კომიქსს,
+                  რომელსაც ციფრულად ჩამოტვირთავ ან დაბეჭდილს მიიღებ.
+                </p>
+                <Link
+                  href="/comic"
+                  className="inline-flex items-center gap-2 bg-white text-text-dark px-7 py-3.5 rounded-full font-medium hover:bg-rose-50 hover:scale-105 transition-all shadow-lg"
+                >
+                  გენერირება <Sparkles size={18} className="text-primary" />
+                </Link>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div
+                    key={i}
+                    className="aspect-[3/4] rounded-2xl bg-white/10 border border-white/10 backdrop-blur-sm flex items-center justify-center text-white/30 text-xs"
+                  >
+                    {i}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        </section>
+
         {/* SECTION 2: HOW IT WORKS (DYNAMIC PATH ANIMATION) */}
         <section className="relative py-24 my-20">
           <div className="absolute inset-0 bg-white/40 backdrop-blur-xl border-y border-white shadow-[0_8px_32px_rgba(0,0,0,0.04)] z-0"></div>

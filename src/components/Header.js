@@ -4,9 +4,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useCartStore } from "@/store/cartStore";
-import { ShoppingBag, User, Menu, X, Heart } from "lucide-react";
+import { ShoppingBag, User, Menu, X, Heart, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { StickyTimer } from "@/components/StickyTimer";
+import { AuthButton } from "@/components/AuthButton";
 
 export function Header() {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -47,7 +48,10 @@ export function Header() {
                     {/* Desktop Nav */}
                     <nav className="hidden md:flex items-center gap-8 font-medium text-sm text-text-mutted">
                         <Link href="/" className="hover:text-primary transition-colors">მთავარი</Link>
-                        <Link href="/shop/read-me" className="hover:text-primary transition-colors text-primary font-bold">მაღაზია</Link>
+                        <Link href="/shop/read-me" className="hover:text-primary transition-colors">მაღაზია</Link>
+                        <Link href="/comic" className="hover:text-primary transition-colors text-primary font-bold inline-flex items-center gap-1">
+                            <Sparkles size={14} /> AI კომიქსი
+                        </Link>
                         <Link href="/about" className="hover:text-primary transition-colors">ჩვენს შესახებ</Link>
                         <Link href="/faq" className="hover:text-primary transition-colors">კითხვები</Link>
                         <Link href="/contact" className="hover:text-primary transition-colors">კონტაქტი</Link>
@@ -55,9 +59,9 @@ export function Header() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-2 sm:gap-4 relative z-50">
-                        <button className="p-2 text-text-mutted hover:text-primary transition-colors hidden sm:block">
-                            <User size={20} />
-                        </button>
+                        <div className="hidden sm:block">
+                            <AuthButton />
+                        </div>
                         <button
                             onClick={openCart}
                             className="p-2 text-text-mutted hover:text-primary transition-colors relative"
@@ -95,16 +99,19 @@ export function Header() {
                     >
                         <div className="flex flex-col gap-6 items-center text-center">
                             <Link href="/" onClick={() => setMobileMenuOpen(false)} className="text-2xl font-serif text-text-dark hover:text-primary transition-colors">მთავარი</Link>
-                            <Link href="/shop/read-me" onClick={() => setMobileMenuOpen(false)} className="text-2xl font-serif text-primary font-bold">მაღაზია</Link>
+                            <Link href="/shop/read-me" onClick={() => setMobileMenuOpen(false)} className="text-2xl font-serif text-text-dark hover:text-primary transition-colors">მაღაზია</Link>
+                            <Link href="/comic" onClick={() => setMobileMenuOpen(false)} className="text-2xl font-serif text-primary font-bold inline-flex items-center gap-2">
+                                <Sparkles size={20} /> AI კომიქსი
+                            </Link>
                             <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="text-2xl font-serif text-text-dark hover:text-primary transition-colors">ჩვენს შესახებ</Link>
                             <Link href="/faq" onClick={() => setMobileMenuOpen(false)} className="text-2xl font-serif text-text-dark hover:text-primary transition-colors">კითხვები</Link>
                             <Link href="/contact" onClick={() => setMobileMenuOpen(false)} className="text-2xl font-serif text-text-dark hover:text-primary transition-colors">კონტაქტი</Link>
                         </div>
 
                         <div className="mt-auto pb-12 w-full pt-8 border-t border-rose-50 flex flex-col gap-4">
-                            <Link href="/auth/login" onClick={() => setMobileMenuOpen(false)} className="elegant-btn-outline w-full gap-2 justify-center">
-                                <User size={18} /> პროფილი
-                            </Link>
+                            <div className="flex justify-center">
+                                <AuthButton />
+                            </div>
                         </div>
                     </motion.div>
                 )}
