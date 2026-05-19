@@ -22,7 +22,21 @@ function LoginForm() {
         setError(null);
         try {
             const supabase = getSupabaseBrowser();
-            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            let { error } = await supabase.auth.signInWithPassword({ email, password });
+
+            // If Supabase returns "Email not confirmed", auto-confirm via the
+            // admin endpoint and retry once. We can't tell whether the account
+            // is genuinely unconfirmed or simply doesn't exist — the endpoint
+            // is a no-op on missing accounts, so a retry is safe either way.
+            if (error && /email.*not.*confirmed/i.test(error.message)) {
+                await fetch("/api/auth/auto-confirm", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email }),
+                }).catch(() => {});
+                ({ error } = await supabase.auth.signInWithPassword({ email, password }));
+            }
+
             if (error) throw error;
             router.push(redirectTo);
             router.refresh();

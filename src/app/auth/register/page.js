@@ -31,6 +31,23 @@ export default function RegisterPage() {
                 },
             });
             if (error) throw error;
+
+            // Force-confirm the email server-side so the user can sign in
+            // immediately without clicking a confirmation link.
+            await fetch("/api/auth/auto-confirm", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: form.email }),
+            }).catch(() => {});
+
+            // signUp returned no session because the user is freshly created;
+            // sign in explicitly so the session cookie is set before redirect.
+            const { error: signInErr } = await supabase.auth.signInWithPassword({
+                email: form.email,
+                password: form.password,
+            });
+            if (signInErr) throw signInErr;
+
             router.push("/comic");
             router.refresh();
         } catch (err) {
