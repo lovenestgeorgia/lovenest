@@ -23,7 +23,17 @@ export async function GET(_req, { params }) {
 // re-rolls, or hijack projects. `style_id` is mutable only while the project
 // is in an early state (see PATCH below).
 const ALWAYS_ALLOWED = new Set(["title", "story_text", "panel_count"]);
-const EARLY_STATES = new Set(["draft", "interviewing", "characters", "styling"]);
+// States where the customer is still configuring the comic, before any panels
+// have been generated. `paid` is here too because the upfront bundle payment
+// flips status to "paid" immediately and the user then walks the wizard with
+// that status sticking until /generate atomically claims "generating".
+const EARLY_STATES = new Set([
+    "draft",
+    "interviewing",
+    "characters",
+    "styling",
+    "paid",
+]);
 
 export async function PATCH(req, { params }) {
     const { id } = await params;

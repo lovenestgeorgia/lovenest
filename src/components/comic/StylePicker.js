@@ -19,10 +19,11 @@ export function StylePicker({ projectId, styles, initialStyleId, initialPanelCou
         setAdvancing(true);
         setError(null);
         try {
-            // Save style_id + panel_count. We don't try to set status here —
-            // the server's PATCH allowlist forbids moving into "generating",
-            // and the generate API does that transition atomically on its own.
-            await fetch(`/api/comic/projects/${projectId}`, {
+            // Save style_id + panel_count, then verify the row actually
+            // accepted our style_id. The PATCH allowlist can silently drop
+            // fields it doesn't accept; reading the response back catches
+            // any future regression.
+            const res = await fetch(`/api/comic/projects/${projectId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -30,6 +31,13 @@ export function StylePicker({ projectId, styles, initialStyleId, initialPanelCou
                     panel_count: panelCount,
                 }),
             });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(json.error || "სტილის შენახვა ვერ მოხერხდა");
+            }
+            if (json.project && json.project.style_id !== selected) {
+                throw new Error("სტილი ვერ შეინახა, განაახლე გვერდი და სცადე თავიდან");
+            }
             router.push(`/comic/${projectId}/generate`);
         } catch (e) {
             setError(e.message);
