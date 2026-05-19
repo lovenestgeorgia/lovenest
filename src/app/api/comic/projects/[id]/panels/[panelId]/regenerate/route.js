@@ -11,7 +11,9 @@ import { classifyRegenComment } from "@/lib/comic/classify";
 import { normalizeRefImage } from "@/lib/comic/imageNormalize";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+// 240s lets a single-panel re-render survive a slow first OpenAI attempt
+// (90s timeout) + retry + Gemini overlay without hitting Vercel's wall.
+export const maxDuration = 240;
 
 // Hard cap on how many times a single panel can be regenerated. Each call
 // hits Nano Banana Pro + optionally a character-sheet generation, so without
@@ -36,7 +38,13 @@ async function downloadAsBase64(admin, bucket, path) {
     }
 }
 
+// Wall-clock cutoff for running the critic. With maxDuration=240s we want
+// the critic + finalization writes to fit under ~140s of prior work; any
+// later and we risk a 504. The critic itself takes 6-10s.
+const CRITIC_TIME_BUDGET_MS = 140_000;
+
 export async function POST(req, { params }) {
+    const startedAt = Date.now();
     const { id, panelId } = await params;
     const supabase = await getSupabaseServer();
     const { data: { user } } = await supabase.auth.getUser();
@@ -239,16 +247,28 @@ export async function POST(req, { params }) {
             .from(PANEL_BUCKET)
             .createSignedUrl(path, 60 * 60 * 24 * 30);
 
-        // Critic pass — re-evaluate the regenerated panel
-        const critique = await critiquePanel({
-            imageBase64: base64,
-            mimeType: "image/png",
-            pageType,
-            dialogue: panel.dialogue,
-            caption: panel.caption,
-            title: pageType === "cover" ? project.title : "",
-            characters: characters || [],
-        });
+        // Critic pass runs only if we're well within the wall-clock budget.
+        // On user-initiated regenerates the customer is making the judgment
+        // call anyway, so skipping the 6-10s critic when we're already over
+        // ~110s of work prevents a 504 on slow OpenAI/Gemini days.
+        let critique = panel.critique || null;
+        if (Date.now() - startedAt < CRITIC_TIME_BUDGET_MS) {
+            try {
+                critique = await critiquePanel({
+                    imageBase64: base64,
+                    mimeType: "image/png",
+                    pageType,
+                    dialogue: panel.dialogue,
+                    caption: panel.caption,
+                    title: pageType === "cover" ? project.title : "",
+                    characters: characters || [],
+                });
+            } catch (e) {
+                console.warn("[regenerate] critic failed:", e.message);
+            }
+        } else {
+            console.log("[regenerate] critic skipped — wall-clock budget");
+        }
 
         const { data: updated } = await admin
             .from("comic_panels")
