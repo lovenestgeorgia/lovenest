@@ -93,24 +93,13 @@ export default async function ComicLandingPage() {
                             </Link>
                         </div>
 
-                        {/* Price row — typographic, not chip-y */}
-                        <div className="flex items-baseline gap-8 pt-4 text-sm text-text-mutted">
-                            <span className="flex items-baseline gap-2">
-                                <span className="font-serif text-2xl text-text-dark">
-                                    {formatPrice(PRICES.digital)}
-                                </span>
-                                <span className="text-[11px] uppercase tracking-[0.22em] font-mono">
-                                    ციფრული
-                                </span>
+                        {/* Single bundle price */}
+                        <div className="flex items-baseline gap-3 pt-4 text-sm text-text-mutted">
+                            <span className="font-serif text-3xl text-text-dark">
+                                {formatPrice(PRICES.digital)}
                             </span>
-                            <span className="text-text-mutted/30 select-none">·</span>
-                            <span className="flex items-baseline gap-2">
-                                <span className="font-serif text-2xl text-text-dark">
-                                    +{formatPrice(PRICES.print)}
-                                </span>
-                                <span className="text-[11px] uppercase tracking-[0.22em] font-mono">
-                                    ბეჭდური
-                                </span>
+                            <span className="text-[11px] uppercase tracking-[0.22em] font-mono">
+                                ბეჭდური წიგნი · PDF · მიწოდება
                             </span>
                         </div>
                     </div>

@@ -187,8 +187,13 @@ export async function POST(req) {
             return NextResponse.json({ error: "db error" }, { status: 500 });
         }
 
+        // The upfront "digital" payment is now an all-inclusive bundle that
+        // includes the printed book + shipping, so we flip both flags.
+        // Legacy standalone print upgrades still only set paid_print.
         const projectUpdate =
-            order.type === "digital" ? { paid_digital: true } : { paid_print: true };
+            order.type === "digital"
+                ? { paid_digital: true, paid_print: true }
+                : { paid_print: true };
         // Don't blow away project.status if it's already further along; only
         // mark "paid" when the project is still in preview/styling.
         const { error: projErr } = await admin
