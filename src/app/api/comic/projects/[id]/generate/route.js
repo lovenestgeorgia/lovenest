@@ -347,11 +347,22 @@ export async function POST(_req, { params }) {
                 );
 
                 // ===== 4. Generate images with bounded concurrency =====
-                // Three at a time keeps OpenAI happy and recovers cleanly
-                // from network blips. Bump in code if you switch providers.
-                const PANEL_CONCURRENCY = 3;
+                // OpenAI gpt-image edits with refs commonly takes 30-60s per
+                // panel. At concurrency 3 a 10-panel comic needs ~4 waves =
+                // 200-240s, which combined with script + character sheets
+                // pushes us past Vercel's 5-min ceiling. Bump to 5 so the
+                // whole pipeline fits comfortably under the wall.
+                const PANEL_CONCURRENCY = 5;
                 const CONCURRENCY = Math.min(PANEL_CONCURRENCY, panelRows.length);
                 let cursor = 0;
+
+                // Wall-clock budget for the entire pipeline. Vercel kills
+                // functions at 300s; bailing at 270s leaves room to mark
+                // remaining panels failed, reset project status, and fire
+                // a 'done' event so the client knows the run finished.
+                const pipelineStartedAt = Date.now();
+                const PIPELINE_BUDGET_MS = 270_000;
+                let budgetExceeded = false;
 
                 async function generateOne(row, scriptIdx) {
                     const scriptPanel = normalized[scriptIdx];
@@ -625,6 +636,15 @@ export async function POST(_req, { params }) {
 
                 async function worker(workerId) {
                     while (cursor < panelRows.length) {
+                        // Wall-clock budget check — bail before grabbing the
+                        // next panel so a partial run can finalize cleanly.
+                        if (Date.now() - pipelineStartedAt > PIPELINE_BUDGET_MS) {
+                            budgetExceeded = true;
+                            console.warn(
+                                `[generate] worker=${workerId} stopping early: pipeline budget exceeded`
+                            );
+                            return;
+                        }
                         const i = cursor++;
                         const row = panelRows[i];
                         console.log(
@@ -645,6 +665,36 @@ export async function POST(_req, { params }) {
                         (_, idx) => worker(idx + 1)
                     )
                 );
+
+                // If we stopped early due to wall-clock budget, mark any
+                // panels still pending/generating as failed so the UI surfaces
+                // the right state and the customer can use per-panel
+                // regenerate to finish the remaining work.
+                if (budgetExceeded) {
+                    const { data: stuck } = await admin
+                        .from("comic_panels")
+                        .select("id, ord")
+                        .eq("project_id", id)
+                        .in("status", ["pending", "generating"]);
+                    if (stuck?.length) {
+                        console.warn(
+                            `[generate] budget exceeded — marking ${stuck.length} panel(s) failed`
+                        );
+                        await admin
+                            .from("comic_panels")
+                            .update({ status: "failed" })
+                            .eq("project_id", id)
+                            .in("status", ["pending", "generating"]);
+                        for (const p of stuck) {
+                            send({
+                                type: "panel-failed",
+                                id: p.id,
+                                ord: p.ord,
+                                error: "pipeline budget exceeded",
+                            });
+                        }
+                    }
+                }
 
                 await admin
                     .from("comic_projects")
