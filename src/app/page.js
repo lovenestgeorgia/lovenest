@@ -71,12 +71,6 @@ const idealForData = [
     image: "/470901438_17872310865248691_4842326323820694113_n.jpg",
   },
   {
-    title: "წლისთავისთვის",
-    tag: "მოგონებები",
-    desc: "ერთობლივი წლები, შეფუთული ერთ წიგნად. ყველაზე ტკბილი მომენტებიდან.",
-    image: "/475530985_17878046565248691_7135969833605092257_n.jpg",
-  },
-  {
     title: "მეგობრისთვის",
     tag: "ძმობა",
     desc: "მეგობრობაც დიდი სიყვარულია. აგრძნობინე, რას ნიშნავს ის შენთვის.",
@@ -351,15 +345,17 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* 5 secondary tiles */}
-            {idealForData.slice(1).map((item, idx) => (
+            {/* 4 secondary tiles — last one widens to fill the bottom row */}
+            {idealForData.slice(1).map((item, idx, arr) => (
               <motion.div
                 key={item.title}
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ duration: 0.8, delay: idx * 0.1, ease: [0.2, 0.8, 0.2, 1] }}
-                className="relative rounded-[2rem] overflow-hidden group cursor-pointer shadow-[0_18px_40px_-20px_rgba(138,31,59,0.28)] border border-rose-100"
+                className={`relative rounded-[2rem] overflow-hidden group cursor-pointer shadow-[0_18px_40px_-20px_rgba(138,31,59,0.28)] border border-rose-100 ${
+                  idx === arr.length - 1 ? "lg:col-span-2" : ""
+                }`}
               >
                 <Image
                   src={item.image}
