@@ -1,0 +1,17 @@
+{
+  "name": "lovenest-remotion-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline Remotion studio for rendering the comic explainer video. Renders to ../public/how-it-works.mp4 which the main Next.js app embeds as a plain <video>.",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render src/index.js HowItWorks ../public/how-it-works.mp4 --codec=h264 --concurrency=2",
+    "render-webm": "remotion render src/index.js HowItWorks ../public/how-it-works.webm --codec=vp9"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remotion": "^4.0.463",
+    "@remotion/cli": "^4.0.463"
+  }
+}
