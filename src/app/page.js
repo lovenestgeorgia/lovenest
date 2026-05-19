@@ -127,9 +127,9 @@ export default function Home() {
       </div>
 
       <main className="relative z-10 pt-24 sm:pt-32">
-        {/* Hero — in the lovenest house style, amplified: warmer, rounder, more confident */}
+        {/* Hero — AI comic generator, warm house vocabulary */}
         <section className="relative min-h-[88vh] flex items-center justify-center pb-16 sm:pb-24 px-6">
-          {/* Hero-specific warm blooms, larger than the global background blobs */}
+          {/* Warm blooms */}
           <motion.div
             aria-hidden
             animate={{ scale: [1, 1.08, 1], opacity: [0.5, 0.7, 0.5] }}
@@ -151,7 +151,7 @@ export default function Home() {
 
           <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_1.05fr] gap-12 lg:gap-16 items-center relative z-10">
 
-            {/* LEFT — type column, brand house style amplified */}
+            {/* LEFT — type column */}
             <div className="order-2 lg:order-1 flex flex-col items-center lg:items-start text-center lg:text-left">
 
               <motion.div
@@ -160,8 +160,8 @@ export default function Home() {
                 transition={{ duration: 0.7, ease: [0.2, 0.8, 0.2, 1] }}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-rose-50 rounded-full text-primary font-semibold text-xs sm:text-[13px] border border-rose-100 shadow-[0_8px_24px_-12px_rgba(138,31,59,0.18)]"
               >
-                <Heart size={13} className="fill-current" />
-                <span>ყველაზე პოპულარული სასაჩუქრე წიგნი</span>
+                <Sparkles size={13} />
+                <span>ახალი · AI კომიქსის გენერატორი</span>
               </motion.div>
 
               <motion.h1
@@ -170,8 +170,8 @@ export default function Home() {
                 transition={{ duration: 0.9, delay: 0.1, ease: [0.2, 0.8, 0.2, 1] }}
                 className="mt-7 font-serif text-text-dark leading-[0.95] tracking-[-0.015em]"
               >
-                <span className="block text-[3.5rem] sm:text-7xl lg:text-[6rem] xl:text-[7rem] font-bold">
-                  წამიკითხე
+                <span className="block text-[3.25rem] sm:text-7xl lg:text-[6rem] xl:text-[7rem] font-bold">
+                  შენი ისტორია
                 </span>
                 <motion.span
                   initial={{ opacity: 0, y: 10 }}
@@ -179,7 +179,7 @@ export default function Home() {
                   transition={{ duration: 0.8, delay: 0.45, ease: [0.2, 0.8, 0.2, 1] }}
                   className="block mt-3 sm:mt-4 text-3xl sm:text-4xl lg:text-5xl xl:text-[3.5rem] italic font-light text-primary"
                 >
-                  როცა დაგჭირდები
+                  კომიქსად
                 </motion.span>
               </motion.h1>
 
@@ -189,7 +189,7 @@ export default function Home() {
                 transition={{ duration: 0.7, delay: 0.55 }}
                 className="mt-7 max-w-md lg:max-w-lg text-base sm:text-lg text-text-mutted font-light leading-relaxed"
               >
-                84 გვერდი ჩატეული სიყვარულით. დაუტოვე შენი სიტყვები ზუსტად იმ მომენტებისთვის, როცა ეს ყველაზე მეტად დასჭირდება.
+                გვიამბე ისტორია, ატვირთე ფოტოები, აირჩიე ვიზუალური სტილი. AI შენთვის შექმნის უნიკალურ კომიქსს, რომელსაც PDF-ით ჩამოტვირთავ ან ბეჭდურად მიიღებ.
               </motion.p>
 
               <motion.div
@@ -199,18 +199,18 @@ export default function Home() {
                 className="mt-9 sm:mt-10 flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
               >
                 <Link
-                  href="/shop/read-me"
+                  href="/comic"
                   className="elegant-btn text-base sm:text-lg group w-full sm:w-auto shadow-[0_18px_40px_-14px_rgba(138,31,59,0.45)] hover:shadow-[0_22px_48px_-12px_rgba(138,31,59,0.55)]"
                 >
-                  <span className="font-semibold">შეიძინე 39 ₾</span>
+                  <span className="font-semibold">შექმენი კომიქსი</span>
                   <Sparkles size={18} className="ml-2.5 group-hover:rotate-12 transition-transform" />
                 </Link>
                 <Link
-                  href="#info"
+                  href="/comic#how"
                   className="text-sm text-text-mutted hover:text-primary transition-colors inline-flex items-center gap-1.5 group"
                 >
                   <span className="underline underline-offset-[6px] decoration-text-mutted/30 group-hover:decoration-primary/60">
-                    ვრცლად წიგნზე
+                    ნახე როგორ მუშაობს
                   </span>
                   <ChevronDown size={14} className="group-hover:translate-y-0.5 transition-transform" />
                 </Link>
@@ -220,59 +220,101 @@ export default function Home() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.6, delay: 0.9 }}
-                className="mt-7 sm:mt-8 flex items-center gap-3 text-sm font-medium text-text-dark"
+                className="mt-7 sm:mt-8 flex flex-wrap items-baseline gap-x-4 gap-y-1.5 text-[12px] sm:text-[13px] text-text-mutted"
               >
-                <div className="flex gap-0.5 text-yellow-500">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={15} className="fill-current" />
-                  ))}
-                </div>
-                <span className="text-text-mutted">1000+ ბედნიერი წყვილი · 4.9/5</span>
+                <span className="inline-flex items-baseline gap-2">
+                    <span className="font-serif text-lg text-text-dark tabular-nums">60 ₾</span>
+                    <span className="line-through text-text-mutted/55 tabular-nums">90 ₾</span>
+                    <span className="inline-flex items-center px-1.5 py-0.5 bg-primary text-bg-light text-[9px] font-bold rounded-full leading-none">-33%</span>
+                </span>
+                <span aria-hidden className="text-text-mutted/35">·</span>
+                <span>PDF + ბეჭდური</span>
+                <span aria-hidden className="text-text-mutted/35">·</span>
+                <span>უფასო შეფუთვა</span>
               </motion.div>
             </div>
 
-            {/* RIGHT — book hero card, rounded-[2.5rem] in brand vocabulary */}
+            {/* RIGHT — comic samples mosaic */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.94 }}
-              animate={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1.1, ease: [0.2, 0.8, 0.2, 1] }}
               className="order-1 lg:order-2 relative w-full flex justify-center lg:justify-end"
             >
               <div className="relative w-full max-w-md aspect-[4/5]">
-                {/* Bolder offset decorative ring — pushed further for drama (brand vocab amplified) */}
+                {/* Warm halo behind the mosaic */}
                 <div
                   aria-hidden
-                  className="absolute inset-0 rounded-[2.5rem] border-2 border-primary/25 translate-x-5 translate-y-5"
-                />
-                {/* Secondary softer ring — adds depth without breaking the language */}
-                <div
-                  aria-hidden
-                  className="absolute inset-0 rounded-[2.5rem] border border-rose-200/50 translate-x-2.5 translate-y-2.5"
+                  className="absolute -inset-10 -z-10 rounded-full"
+                  style={{
+                    background:
+                      "radial-gradient(closest-side, oklch(78% 0.10 40 / 0.55), transparent 70%)",
+                    filter: "blur(36px)",
+                  }}
                 />
 
-                {/* Image card */}
-                <div className="absolute inset-0 rounded-[2.5rem] overflow-hidden shadow-[0_40px_80px_-25px_rgba(138,31,59,0.35)] border border-rose-100 group cursor-pointer bg-bg-light">
+                {/* Featured panel (front, center-left) */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.92, rotate: -3 }}
+                  animate={{ opacity: 1, scale: 1, rotate: -2 }}
+                  transition={{ duration: 0.9, delay: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
+                  className="absolute top-[4%] left-[2%] sm:left-[4%] w-[64%] aspect-[3/4] rounded-[1.5rem] overflow-hidden border border-rose-100 shadow-[0_40px_80px_-25px_rgba(138,31,59,0.4)] bg-bg-light z-20"
+                >
                   <Image
-                    src="/hero.png"
-                    alt="წამიკითხე როცა დაგჭირდები"
+                    src="/comic-styles/romantic-watercolor.png"
+                    alt="რომანტიკული აკვარელის სტილში"
                     fill
-                    className="object-cover object-center group-hover:scale-[1.04] transition-transform duration-[900ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]"
+                    sizes="(min-width: 1024px) 22vw, 60vw"
+                    className="object-cover"
                     priority
                   />
-                </div>
+                </motion.div>
 
-                {/* Floating brand-language chip — heart instead of generic alert */}
+                {/* Behind-right panel */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.92, rotate: 8 }}
+                  animate={{ opacity: 1, scale: 1, rotate: 6 }}
+                  transition={{ duration: 0.9, delay: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+                  className="absolute top-[10%] right-[2%] sm:right-[4%] w-[52%] aspect-[3/4] rounded-[1.5rem] overflow-hidden border border-rose-100 shadow-[0_28px_60px_-22px_rgba(138,31,59,0.35)] bg-bg-light z-10"
+                >
+                  <Image
+                    src="/comic-styles/ghibli-esque.png"
+                    alt="Ghibli სტილში"
+                    fill
+                    sizes="(min-width: 1024px) 18vw, 50vw"
+                    className="object-cover"
+                    priority
+                  />
+                </motion.div>
+
+                {/* Bottom-left small panel */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, rotate: -10 }}
+                  animate={{ opacity: 1, scale: 1, rotate: -7 }}
+                  transition={{ duration: 0.9, delay: 0.45, ease: [0.2, 0.8, 0.2, 1] }}
+                  className="absolute bottom-[2%] left-[14%] w-[42%] aspect-[3/4] rounded-[1.25rem] overflow-hidden border border-rose-100 shadow-[0_20px_44px_-18px_rgba(138,31,59,0.3)] bg-bg-light z-30"
+                >
+                  <Image
+                    src="/comic-styles/manga-bw.png"
+                    alt="მანგა სტილში"
+                    fill
+                    sizes="(min-width: 1024px) 14vw, 40vw"
+                    className="object-cover"
+                  />
+                </motion.div>
+
+                {/* Floating "AI · 6 styles" chip */}
                 <motion.div
                   initial={{ opacity: 0, y: 12, x: 12 }}
                   animate={{ opacity: 1, y: 0, x: 0 }}
                   transition={{ duration: 0.7, delay: 0.95, ease: [0.2, 0.8, 0.2, 1] }}
-                  className="absolute -bottom-4 -left-4 sm:bottom-6 sm:-left-6 z-10 inline-flex items-center gap-2 bg-bg-light pl-3 pr-4 py-2.5 rounded-full shadow-xl border border-rose-100"
+                  className="absolute -top-3 -right-2 sm:top-4 sm:-right-6 z-40 inline-flex items-center gap-2 bg-bg-light pl-3 pr-4 py-2.5 rounded-full shadow-xl border border-rose-100"
                 >
                   <span className="w-7 h-7 rounded-full bg-primary text-bg-light flex items-center justify-center">
-                    <Heart size={13} className="fill-current" />
+                    <Sparkles size={13} />
                   </span>
                   <span className="text-xs sm:text-[13px] font-semibold text-text-dark">
-                    84 გვერდი სიყვარული
+                    6 ვიზუალური სტილი
                   </span>
                 </motion.div>
               </div>
