@@ -14,9 +14,12 @@ export function getOpenAI() {
 export const IMAGE_MODEL = "gpt-image-2";
 const IMAGE_QUALITY = "medium";
 
-const IMAGE_TIMEOUT_MS = 180_000;
-const MAX_RETRIES = 3; // attempts = MAX_RETRIES + 1
-const RETRY_DELAYS_MS = [1500, 4000, 9000];
+// Per-call ceiling. OpenAI gpt-image medium with refs typically finishes
+// in 30-60s; 90s gives generous headroom while still letting a hung call
+// surface fast so the worker can move on.
+const IMAGE_TIMEOUT_MS = 90_000;
+const MAX_RETRIES = 1; // attempts = MAX_RETRIES + 1 (= 2 total)
+const RETRY_DELAYS_MS = [2500];
 
 function withTimeout(promise, ms, label) {
     let timer;

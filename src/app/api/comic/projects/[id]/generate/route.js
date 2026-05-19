@@ -586,15 +586,64 @@ export async function POST(_req, { params }) {
                     }
                 }
 
-                async function worker() {
+                // Hard ceiling for a single panel's full pipeline (PASS 1 +
+                // PASS 2 + critic + retry). Even if everything below times
+                // out at its own layer, this guarantees a stuck panel can't
+                // hold up the worker for more than 4 minutes.
+                const PANEL_HARD_TIMEOUT_MS = 4 * 60_000;
+                function withWorkerTimeout(row, scriptIdx) {
+                    return new Promise((resolve) => {
+                        let done = false;
+                        const t = setTimeout(async () => {
+                            if (done) return;
+                            done = true;
+                            console.warn(
+                                `[generate] panel ${row.ord} hard-timeout after ${PANEL_HARD_TIMEOUT_MS / 1000}s, marking failed`
+                            );
+                            try {
+                                await admin
+                                    .from("comic_panels")
+                                    .update({ status: "failed" })
+                                    .eq("id", row.id);
+                                send({
+                                    type: "panel-failed",
+                                    id: row.id,
+                                    ord: row.ord,
+                                    error: "panel hard-timeout",
+                                });
+                            } catch {}
+                            resolve();
+                        }, PANEL_HARD_TIMEOUT_MS);
+                        generateOne(row, scriptIdx).finally(() => {
+                            if (done) return;
+                            done = true;
+                            clearTimeout(t);
+                            resolve();
+                        });
+                    });
+                }
+
+                async function worker(workerId) {
                     while (cursor < panelRows.length) {
                         const i = cursor++;
-                        await generateOne(panelRows[i], i);
+                        const row = panelRows[i];
+                        console.log(
+                            `[generate] worker=${workerId} starting panel ${row.ord} (${i + 1}/${panelRows.length})`
+                        );
+                        const t0 = Date.now();
+                        await withWorkerTimeout(row, i);
+                        console.log(
+                            `[generate] worker=${workerId} done panel ${row.ord} in ${Date.now() - t0}ms`
+                        );
                     }
+                    console.log(`[generate] worker=${workerId} idle, cursor=${cursor}`);
                 }
 
                 await Promise.all(
-                    Array.from({ length: Math.min(CONCURRENCY, panelRows.length) }, worker)
+                    Array.from(
+                        { length: Math.min(CONCURRENCY, panelRows.length) },
+                        (_, idx) => worker(idx + 1)
+                    )
                 );
 
                 await admin

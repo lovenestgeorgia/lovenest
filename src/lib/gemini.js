@@ -32,8 +32,10 @@ const IMAGE_FALLBACKS = [];
 
 // Image generation timeout. Pro can take 60-120s under load. With no Flash
 // fallback configured, an aggressive timeout just makes runs flaky — give
-// Pro 3 minutes before declaring it stuck.
-const IMAGE_TIMEOUT_MS = 180_000;
+// 90s lets Pro finish under normal load while keeping hung calls from
+// blocking the worker pool. The whole panel has its own outer timeout
+// in the generate route as a final safety net.
+const IMAGE_TIMEOUT_MS = 90_000;
 const TEXT_TIMEOUT_MS = 60_000;
 
 function withTimeout(promise, ms, label) {
