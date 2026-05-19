@@ -127,18 +127,32 @@ export function GenerationProgress({ projectId, expectedCount, initialPanels, sh
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [projectId, shouldStart]);
 
-    // Polling fallback for mid-flight re-entries
+    // Polling fallback. Runs in parallel with the SSE stream so a dropped
+    // connection (or the "already running" no-op stream after a mid-flight
+    // refresh) doesn't leave the UI frozen on the script phase. The endpoint
+    // is a cheap DB read; both data sources merge into the same state.
     useEffect(() => {
-        if (shouldStart || done) return;
+        if (done) return;
         const id = setInterval(async () => {
             try {
                 const res = await fetch(`/api/comic/projects/${projectId}/panels`);
                 const json = await res.json();
                 if (json.panels) {
-                    setPanels(json.panels);
-                    setPhase(derivePhase(json.panels));
+                    // Merge: prefer the server snapshot but keep any in-flight
+                    // intermediate state the SSE has on us (art_url, stage).
+                    setPanels((prev) => {
+                        const byId = new Map(prev.map((p) => [p.id, p]));
+                        return json.panels.map((srv) => {
+                            const old = byId.get(srv.id);
+                            return old ? { ...old, ...srv } : srv;
+                        });
+                    });
+                    setPhase((p) =>
+                        p === "done" ? p : derivePhase(json.panels)
+                    );
                     const allReady =
-                        json.panels.length > 0 && json.panels.every((p) => p.status === "ready");
+                        json.panels.length > 0 &&
+                        json.panels.every((p) => p.status === "ready");
                     if (allReady) {
                         setDone(true);
                         setPhase("done");
@@ -148,7 +162,7 @@ export function GenerationProgress({ projectId, expectedCount, initialPanels, sh
             } catch {}
         }, 3000);
         return () => clearInterval(id);
-    }, [projectId, shouldStart, done]);
+    }, [projectId, done]);
 
     const handleEvent = (ev) => {
         switch (ev.type) {
@@ -305,6 +319,10 @@ export function GenerationProgress({ projectId, expectedCount, initialPanels, sh
     const pct = totalCount ? Math.round((readyCount / totalCount) * 100) : 0;
     // "Everything broke" recovery: server reported an error OR most panels failed.
     const allBroken = error || (failedCount > 0 && failedCount >= totalCount / 2);
+    // After ~75s in the scripting phase with no panel rows yet, the SSE
+    // stream is probably dead. Show a hint inviting the user to refresh.
+    const scriptStuck =
+        !done && !error && panels.length === 0 && elapsed > 75;
 
     // Modal state — derived from error / panel failures
     const [errorModalDismissed, setErrorModalDismissed] = useState(false);
@@ -402,6 +420,25 @@ export function GenerationProgress({ projectId, expectedCount, initialPanels, sh
                 readyCount={readyCount}
                 totalCount={totalCount}
             />
+
+            {/* Stuck-on-script hint — appears after ~75s with no panels yet */}
+            {scriptStuck && (
+                <div className="relative z-10 max-w-md mx-auto mt-6">
+                    <div className="text-center text-sm text-text-mutted bg-bg-light border border-rose-100 rounded-2xl px-5 py-4 shadow-[0_14px_30px_-18px_rgba(138,31,59,0.18)]">
+                        <p className="mb-3">
+                            სცენარის შედგენა ჩვეულებრივად 15-30 წამში ხდება.
+                            თუ აქ ღია დიდხანს ხართ, განაახლეთ გვერდი.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => window.location.reload()}
+                            className="text-[11px] uppercase tracking-[0.22em] font-semibold text-primary hover:text-text-dark transition-colors"
+                        >
+                            გვერდის განახლება
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Error modal — same UX as the character upload AI error */}
             <AiErrorModal error={modalError} onClose={() => setErrorModalDismissed(true)} />
