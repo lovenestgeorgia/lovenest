@@ -10,6 +10,7 @@ import {
 } from "@/lib/comic/pricing";
 import { NewProjectButton } from "@/components/comic/NewProjectButton";
 import { PaperGrain } from "@/components/comic/StudioChrome";
+import { HowItWorksPlayer } from "@/components/comic/HowItWorksPlayer";
 
 export const metadata = {
     title: "AI კომიქსის გენერატორი | Lovenest",
@@ -185,9 +186,9 @@ export default async function ComicLandingPage() {
                     </section>
                 )}
 
-                {/* How it works — typographic numbered list, no cards */}
-                <section id="how" className="max-w-4xl mx-auto px-6 mt-36 sm:mt-44">
-                    <header className="text-center mb-16">
+                {/* How it works — Remotion explainer animation + supporting numbered list */}
+                <section id="how" className="max-w-5xl mx-auto px-6 mt-36 sm:mt-44">
+                    <header className="text-center mb-12 sm:mb-14">
                         <p className="text-[11px] uppercase tracking-[0.28em] font-mono text-text-mutted/70 mb-3">
                             ოთხ ნაბიჯში
                         </p>
@@ -196,25 +197,27 @@ export default async function ComicLandingPage() {
                         </h2>
                     </header>
 
-                    <ol className="space-y-10">
+                    <HowItWorksPlayer />
+
+                    <ol className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6 mt-14 sm:mt-16 max-w-3xl mx-auto">
                         {STEPS.map(({ num, icon: Icon, title, desc }) => (
                             <li
                                 key={num}
-                                className="grid grid-cols-[auto_1fr] gap-6 sm:gap-10 items-baseline pb-10 last:pb-0 border-b last:border-b-0 border-rose-100/60"
+                                className="grid grid-cols-[auto_1fr] gap-4 items-baseline pb-5 border-b border-rose-100/60 last:border-b-0"
                             >
-                                <span className="font-serif text-5xl sm:text-6xl text-rose-200/80 select-none">
+                                <span className="font-serif text-3xl text-rose-200/80 select-none tabular-nums">
                                     {num}
                                 </span>
                                 <div>
-                                    <h3 className="font-serif text-2xl text-text-dark mb-1.5 inline-flex items-baseline gap-3">
+                                    <h3 className="font-serif text-lg text-text-dark mb-1 inline-flex items-baseline gap-2.5">
                                         <Icon
-                                            size={20}
+                                            size={16}
                                             className="text-primary -translate-y-0.5 shrink-0"
                                             strokeWidth={1.75}
                                         />
                                         <span>{title}</span>
                                     </h3>
-                                    <p className="text-text-mutted leading-relaxed">{desc}</p>
+                                    <p className="text-text-mutted text-sm leading-relaxed">{desc}</p>
                                 </div>
                             </li>
                         ))}
