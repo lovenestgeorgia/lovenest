@@ -302,8 +302,18 @@ export function OrdersTable({ orders }) {
                                     <span className="text-text-mutted/60">—</span>
                                 )}
                             </td>
-                            <td className="py-3 pr-4 font-mono text-[11px] text-text-mutted/70 tabular-nums">
-                                {o.project_id?.slice(0, 8) || "—"}
+                            <td className="py-3 pr-4 font-mono text-[11px] tabular-nums">
+                                {o.project_id ? (
+                                    <Link
+                                        href={`/comic/${o.project_id}`}
+                                        className="inline-flex items-center gap-1 text-primary hover:text-text-dark underline-offset-[3px] hover:underline transition-colors"
+                                    >
+                                        {o.project_id.slice(0, 8)}
+                                        <ChevronRight size={11} />
+                                    </Link>
+                                ) : (
+                                    <span className="text-text-mutted/70">—</span>
+                                )}
                             </td>
                         </tr>
                     ))}
@@ -344,11 +354,16 @@ export function ProjectsTable({ projects }) {
                                 {dateLabel(p.created_at)}
                             </td>
                             <td className="py-3 pr-4 text-text-dark max-w-[280px] truncate">
-                                {p.title || (
-                                    <span className="text-text-mutted/60 italic">
-                                        უსათაურო
-                                    </span>
-                                )}
+                                <Link
+                                    href={`/comic/${p.id}`}
+                                    className="hover:text-primary transition-colors"
+                                >
+                                    {p.title || (
+                                        <span className="text-text-mutted/60 italic">
+                                            უსათაურო
+                                        </span>
+                                    )}
+                                </Link>
                             </td>
                             <td className="py-3 pr-4 text-text-mutted text-[12px] uppercase tracking-[0.16em] font-mono">
                                 {p.status || "—"}
@@ -367,8 +382,14 @@ export function ProjectsTable({ projects }) {
                                     )}
                                 </span>
                             </td>
-                            <td className="py-3 pr-4 font-mono text-[11px] text-text-mutted/70">
-                                {p.id.slice(0, 8)}
+                            <td className="py-3 pr-4 font-mono text-[11px] tabular-nums">
+                                <Link
+                                    href={`/comic/${p.id}`}
+                                    className="inline-flex items-center gap-1 text-primary hover:text-text-dark underline-offset-[3px] hover:underline transition-colors"
+                                >
+                                    {p.id.slice(0, 8)}
+                                    <ChevronRight size={11} />
+                                </Link>
                             </td>
                         </tr>
                     ))}
