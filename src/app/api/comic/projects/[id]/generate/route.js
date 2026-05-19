@@ -12,6 +12,7 @@ import { getStyleById } from "@/lib/comic/styles";
 import { CHARACTER_BUCKET, PANEL_BUCKET, panelPath, characterSheetPath } from "@/lib/comic/storage";
 import { critiquePanel } from "@/lib/comic/critic";
 import { downloadAndNormalize } from "@/lib/comic/imageNormalize";
+import { notifyFailure } from "@/lib/comic/notify";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -696,6 +697,29 @@ export async function POST(_req, { params }) {
                     }
                 }
 
+                // Final-state summary: if any panels are failed, ping
+                // Telegram so the merchant knows a run needs attention.
+                const { data: failedRows } = await admin
+                    .from("comic_panels")
+                    .select("ord")
+                    .eq("project_id", id)
+                    .eq("status", "failed")
+                    .order("ord", { ascending: true });
+                if (failedRows?.length) {
+                    await notifyFailure({
+                        title: budgetExceeded
+                            ? "კომიქსი ნაწილობრივ შეიქმნა — დროის ლიმიტი"
+                            : "კომიქსში კადრები ჩავარდა",
+                        project: { id, title },
+                        user,
+                        reason: budgetExceeded
+                            ? `Pipeline budget ${Math.round(PIPELINE_BUDGET_MS / 1000)}s exceeded after ${Math.round((Date.now() - pipelineStartedAt) / 1000)}s`
+                            : `${failedRows.length} of ${panelRows.length} panels did not finish`,
+                        failedPanels: failedRows.map((r) => ({ ord: r.ord })),
+                        totalPanels: panelRows.length,
+                    });
+                }
+
                 await admin
                     .from("comic_projects")
                     .update({ status: "preview" })
@@ -713,6 +737,13 @@ export async function POST(_req, { params }) {
                         .eq("id", id);
                 } catch {}
                 send({ type: "error", message: err.message });
+                await notifyFailure({
+                    title: "კომიქსის გენერაცია ჩავარდა",
+                    project: { id, title: project?.title },
+                    user,
+                    reason: "Pipeline error",
+                    details: err.message,
+                });
             } finally {
                 try { controller.close(); } catch {}
             }

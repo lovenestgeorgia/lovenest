@@ -9,6 +9,7 @@ import { CHARACTER_BUCKET, PANEL_BUCKET, panelPath } from "@/lib/comic/storage";
 import { critiquePanel } from "@/lib/comic/critic";
 import { classifyRegenComment } from "@/lib/comic/classify";
 import { normalizeRefImage } from "@/lib/comic/imageNormalize";
+import { notifyFailure } from "@/lib/comic/notify";
 
 export const runtime = "nodejs";
 // 240s lets a single-panel re-render survive a slow first OpenAI attempt
@@ -294,6 +295,13 @@ export async function POST(req, { params }) {
     } catch (err) {
         console.error("regenerate failed:", err);
         await admin.from("comic_panels").update({ status: "failed" }).eq("id", panelId);
+        await notifyFailure({
+            title: "კადრის გადახატვა ჩავარდა",
+            project: { id, title: project?.title },
+            user,
+            reason: `Panel №${String(panel?.ord ?? "?").padStart(2, "0")} regenerate failed`,
+            details: err.message,
+        });
         return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }
