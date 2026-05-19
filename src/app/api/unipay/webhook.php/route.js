@@ -19,21 +19,32 @@ export async function POST(req) {
             } catch (e) { }
         }
 
-        const rawBody = await req.text();
-        let data;
-        try {
-            data = JSON.parse(rawBody);
-        } catch (e) {
-            // Unipay might be sending standard form-urlencoded data instead of pure JSON
-            const searchParams = new URLSearchParams(rawBody);
-            data = Object.fromEntries(searchParams.entries());
-        }
+        // UniPay V2 sends params in the URL query string, V3 sends a JSON body.
+        // Merge both so downstream code can read either shape.
+        const urlObj = new URL(req.url);
+        const queryData = Object.fromEntries(urlObj.searchParams.entries());
 
-        // If this is a comic order (sentinel COMIC::), forward to the comic webhook.
-        // This catches the case where UniPay's merchant dashboard has a project-level
-        // default callback URL that overrides our per-request CallBackUrl.
+        const rawBody = await req.text();
+        let bodyData = {};
+        if (rawBody) {
+            try {
+                bodyData = JSON.parse(rawBody);
+            } catch (e) {
+                bodyData = Object.fromEntries(
+                    new URLSearchParams(rawBody).entries()
+                );
+            }
+        }
+        const data = { ...queryData, ...bodyData };
+
+        // If this is a comic order, forward to the comic webhook. We detect by
+        // either OrderDescription sentinel (V3) or MerchantOrderID prefix (V2).
         const desc = data.OrderDescription || data.orderDescription || "";
-        if (desc.startsWith("COMIC::")) {
+        const merchantOrderId =
+            data.MerchantOrderID || data.MerchantOrderId || "";
+        const isComicOrder =
+            desc.startsWith("COMIC::") || merchantOrderId.startsWith("COMIC-");
+        if (isComicOrder) {
             console.log("Forwarding comic order to /api/comic/unipay/webhook");
             const proto = req.headers.get("x-forwarded-proto") || "https";
             const host = req.headers.get("host");

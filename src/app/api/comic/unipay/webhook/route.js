@@ -35,33 +35,62 @@ export async function POST(req) {
         }
     }
 
+    // UniPay V2 sends params in the URL query string, V3 in a JSON body. Merge
+    // both so we can handle either shape without caring which version fired.
+    const urlObj = new URL(req.url);
+    const queryData = Object.fromEntries(urlObj.searchParams.entries());
+
     const raw = await req.text();
     console.log("[COMIC WEBHOOK] raw body:", raw);
-
-    let data;
-    try {
-        data = JSON.parse(raw);
-    } catch {
-        data = Object.fromEntries(new URLSearchParams(raw).entries());
+    let bodyData = {};
+    if (raw) {
+        try {
+            bodyData = JSON.parse(raw);
+        } catch {
+            bodyData = Object.fromEntries(new URLSearchParams(raw).entries());
+        }
     }
+    const data = { ...queryData, ...bodyData };
     console.log("[COMIC WEBHOOK] parsed:", JSON.stringify(data));
 
-    // 1. Sentinel check
+    // 1. Detect a comic order. V3 uses OrderDescription with COMIC:: sentinel;
+    // V2 doesn't include OrderDescription but its MerchantOrderID is COMIC-<uuid>.
     const desc = data.OrderDescription || data.orderDescription || "";
-    if (!desc.startsWith("COMIC::")) {
-        console.log("[COMIC WEBHOOK] skipped: no COMIC:: sentinel in", desc);
+    const merchantOrderId = data.MerchantOrderID || data.MerchantOrderId || "";
+
+    let orderId;
+    let sentinelType;
+    if (desc.startsWith("COMIC::")) {
+        const parts = desc.split("::");
+        orderId = parts[1];
+        sentinelType = parts[2];
+    } else if (merchantOrderId.startsWith("COMIC-")) {
+        orderId = merchantOrderId.slice("COMIC-".length);
+        sentinelType = null; // V2 doesn't carry type; we'll fall back to order.type
+    } else {
+        console.log("[COMIC WEBHOOK] skipped: no COMIC marker", { desc, merchantOrderId });
         return NextResponse.json({ received: true, skipped: "not a comic order" });
     }
 
-    const [, orderId, sentinelType] = desc.split("::");
+    // Success detector accepts both shapes:
+    //   V3: Status=Success / IsSuccess=true / is_success=true / errorcode=0
+    //   V2: ErrorCode=0 with ErrorMessage=OK, Status numeric (e.g. 3 = paid)
     const status = (data.Status || data.status || "").toString();
+    const errorCode =
+        data.ErrorCode ?? data.errorcode ?? data.errorCode ?? null;
     const isSuccess =
         status.toLowerCase().includes("success") ||
         data.IsSuccess === true ||
         data.IsSuccess === "true" ||
         data.is_success === true ||
-        Number(data.errorcode) === 0;
-    console.log("[COMIC WEBHOOK]", { orderId, sentinelType, status, isSuccess });
+        (errorCode !== null && Number(errorCode) === 0);
+    console.log("[COMIC WEBHOOK]", {
+        orderId,
+        sentinelType,
+        status,
+        errorCode,
+        isSuccess,
+    });
 
     const admin = getSupabaseAdmin();
 
@@ -81,8 +110,13 @@ export async function POST(req) {
     // we have: it's a value UniPay returned synchronously at order creation
     // and would never leak to a customer-facing log/network tab. Even if a
     // user knows their own order UUID and amount, they can't forge this.
-    const reportedHash =
-        (data.UnipayOrderHashID || data.unipay_order_id || data.OrderHashID || "").toString();
+    const reportedHash = (
+        data.UnipayOrderHashID ||
+        data.unipay_order_id ||
+        data.OrderHashID ||
+        data.UnipayOrderID || // V2 callback uses this field name
+        ""
+    ).toString();
     if (order.unipay_order_id) {
         if (reportedHash !== order.unipay_order_id) {
             console.warn("[COMIC WEBHOOK] hash mismatch", {

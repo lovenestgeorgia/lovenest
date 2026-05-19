@@ -185,6 +185,9 @@ export async function POST(req, { params }) {
         unipayData?.UnipayOrderHashID ||
         unipayData?.data?.OrderHashID ||
         unipayData?.OrderHashID ||
+        // V2 order-create response uses UnipayOrderID; callbacks send the same.
+        unipayData?.data?.UnipayOrderID ||
+        unipayData?.UnipayOrderID ||
         "";
 
     // Write the UniPay hash BEFORE returning the redirect URL so the webhook
