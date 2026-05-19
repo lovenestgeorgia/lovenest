@@ -188,9 +188,9 @@ export async function POST(req, { params }) {
     // ---- UniPay: create order, return redirect URL ----
     const merchantId = process.env.UNIPAY_MERCHANT_ID;
     const apiKey = process.env.UNIPAY_API_KEY;
-    const baseUrl =
-        process.env.NEXT_PUBLIC_BASE_URL ||
-        `https://${req.headers.get("host") || "lovenest.ge"}`;
+    // Build callback URLs from the request host so UniPay always calls back
+    // to whichever domain served the checkout (prod, preview, or tunnel).
+    const baseUrl = `https://${req.headers.get("host") || "lovenest.ge"}`;
 
     const authRes = await fetch("https://apiv2.unipay.com/v3/auth", {
         method: "POST",

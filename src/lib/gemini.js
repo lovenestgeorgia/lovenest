@@ -18,24 +18,17 @@ export function getGeminiImage() {
     return _imageClient;
 }
 
-// Default primary models. Fallback IDs let the runtime degrade gracefully
-// when the preferred model returns 503/UNAVAILABLE.
-export const TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-2.5-pro";
-export const IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-3-pro-image-preview";
+// Primary models + fallback chain. Hardcoded; swap here when iterating.
+// Fallback IDs let the runtime degrade gracefully on 503/UNAVAILABLE.
+export const TEXT_MODEL = "gemini-2.5-pro";
+export const IMAGE_MODEL = "gemini-3-pro-image-preview";
 
-const TEXT_FALLBACKS = (process.env.GEMINI_TEXT_MODEL_FALLBACK || "gemini-2.5-flash")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+const TEXT_FALLBACKS = ["gemini-2.5-flash"];
 
-// Pro-only by default. The product owner does not want Flash Image used —
-// quality matters more than reliability. Set GEMINI_IMAGE_MODEL_FALLBACK
-// explicitly if you want fallbacks; otherwise a 503 on Pro will fail the
-// panel and the user can retry.
-const IMAGE_FALLBACKS = (process.env.GEMINI_IMAGE_MODEL_FALLBACK || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+// Pro-only for image — the product owner does not want Flash Image used.
+// A 503 on Pro fails the panel and the user can retry. Add IDs here if you
+// ever want fallbacks.
+const IMAGE_FALLBACKS = [];
 
 // Image generation timeout. Pro can take 60-120s under load. With no Flash
 // fallback configured, an aggressive timeout just makes runs flaky — give

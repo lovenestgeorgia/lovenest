@@ -2,14 +2,14 @@ import { generateImage } from "@/lib/gemini";
 import { generateImageOpenAI } from "@/lib/openai";
 
 // Which model does PASS 1 (text-free panel art) and character sheets?
-// - "gemini" (default): Nano Banana Pro for everything. Text overlay (PASS 2)
-//   is always Gemini regardless.
-// - "openai": OpenAI gpt-image for art only; Gemini still does text overlay.
-//
-// Flip this with IMAGE_PROVIDER=openai in .env.local to re-enable the gpt-image
-// pipeline without touching code.
+//   "openai" — gpt-image draws text-free art, Gemini adds the Georgian text on
+//              top in PASS 2.
+//   "gemini" — Nano Banana Pro does both passes.
+// Edit the constant below to swap.
+const ART_PROVIDER = "openai";
+
 export function getArtProvider() {
-    return (process.env.IMAGE_PROVIDER || "gemini").toLowerCase();
+    return ART_PROVIDER;
 }
 
 // Single entry point both routes call for PASS 1 / character sheets. Returns

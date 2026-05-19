@@ -347,15 +347,10 @@ export async function POST(_req, { params }) {
                 );
 
                 // ===== 4. Generate images with bounded concurrency =====
-                // Default to 3 (small batches keep OpenAI happy and recover
-                // gracefully from network blips). Override via PANEL_CONCURRENCY
-                // — falls back to the legacy GEMINI_IMAGE_CONCURRENCY name.
-                const CONCURRENCY = Math.min(
-                    Number(process.env.PANEL_CONCURRENCY) ||
-                        Number(process.env.GEMINI_IMAGE_CONCURRENCY) ||
-                        3,
-                    panelRows.length
-                );
+                // Three at a time keeps OpenAI happy and recovers cleanly
+                // from network blips. Bump in code if you switch providers.
+                const PANEL_CONCURRENCY = 3;
+                const CONCURRENCY = Math.min(PANEL_CONCURRENCY, panelRows.length);
                 let cursor = 0;
 
                 async function generateOne(row, scriptIdx) {

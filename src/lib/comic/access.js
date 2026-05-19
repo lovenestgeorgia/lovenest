@@ -15,16 +15,13 @@ const STATUS_TO_STEP = {
     fulfilled: "preview",
 };
 
-function devBypassEmails() {
-    return (process.env.DEV_BYPASS_EMAILS || "")
-        .split(",")
-        .map((s) => s.trim().toLowerCase())
-        .filter(Boolean);
-}
+// Admin / dev bypass list — these emails get free comics AND access to the
+// /admin dashboard. Edit this constant to grant/revoke access.
+const ADMIN_EMAILS = ["contact@sabaapkhazava.ge"];
 
 export function isDevUser(user) {
     if (!user?.email) return false;
-    return devBypassEmails().includes(user.email.toLowerCase());
+    return ADMIN_EMAILS.includes(user.email.toLowerCase());
 }
 
 // Gates a step page on:

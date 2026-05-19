@@ -8,8 +8,11 @@ export function getOpenAI() {
     return _client;
 }
 
-export const IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-1";
-const IMAGE_QUALITY = process.env.OPENAI_IMAGE_QUALITY || "high"; // low | medium | high | auto
+// Model + quality are intentionally hardcoded — swap here when iterating.
+// Valid quality: low | medium | high | auto. "high" is much slower with edits
+// + multiple refs.
+export const IMAGE_MODEL = "gpt-image-2";
+const IMAGE_QUALITY = "medium";
 
 const IMAGE_TIMEOUT_MS = 180_000;
 const MAX_RETRIES = 3; // attempts = MAX_RETRIES + 1

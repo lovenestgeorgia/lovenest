@@ -1,23 +1,20 @@
-// Comic pricing — driven by NEXT_PUBLIC_COMIC_* env vars so the prices can
-// be swapped via .env without redeploys.
-
-function num(envValue, fallback) {
-    const n = parseFloat(envValue);
-    return Number.isFinite(n) && n > 0 ? n : fallback;
-}
-
+// Comic pricing — single source of truth. Edit these constants to change the
+// price; tokens are the only thing that lives in env vars.
+//
 // `digital` is the bundle price (digital download + printed book + shipping).
 // `digitalOriginal` is the pre-discount sticker price the UI strikes through
-// next to the actual price. Null when no discount is active.
-const digital = num(process.env.NEXT_PUBLIC_COMIC_DIGITAL_PRICE, 60);
-const digitalOriginalRaw = num(process.env.NEXT_PUBLIC_COMIC_DIGITAL_ORIGINAL, 0);
+// next to the current price (set to null to hide the strikethrough).
+const digital = 60;
+const digitalOriginalRaw = 90;
 const digitalOriginal =
     digitalOriginalRaw > digital ? digitalOriginalRaw : null;
 
 export const PRICES = {
     digital,
     digitalOriginal,
-    print: num(process.env.NEXT_PUBLIC_COMIC_PRINT_PRICE, 79),
+    // Legacy stand-alone print price. Not offered to customers in the bundle
+    // flow but kept on the table so the API enums still resolve.
+    print: 0,
 };
 
 export const HAS_DIGITAL_DISCOUNT = digitalOriginal != null;
