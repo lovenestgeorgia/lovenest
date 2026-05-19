@@ -1,0 +1,37 @@
+services:
+  lovenest:
+    container_name: lovenest
+    restart: unless-stopped
+    environment:
+      # App
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+
+      # Supabase
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+
+      # AI providers
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      GOOGLE_GENAI_API_KEY: ${GOOGLE_GENAI_API_KEY}
+
+      # Google APIs (Drive/Sheets/etc.)
+      GOOGLE_CLIENT_EMAIL: ${GOOGLE_CLIENT_EMAIL}
+      GOOGLE_PRIVATE_KEY: ${GOOGLE_PRIVATE_KEY}
+
+      # UniPay payment gateway
+      UNIPAY_MERCHANT_ID: ${UNIPAY_MERCHANT_ID}
+      UNIPAY_SECRET_KEY: ${UNIPAY_SECRET_KEY}
+      UNIPAY_API_URL: ${UNIPAY_API_URL}
+
+      # Telegram notifications
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+
+    # Healthcheck — hits the root since lovenest has no /health endpoint
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

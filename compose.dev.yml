@@ -1,0 +1,12 @@
+# Simple compose file for development builds, use it for either local builds or test deployments
+services:
+  lovenest-dev:
+    container_name: lovenest-dev
+    extends:
+      file: compose.base.yml
+      service: lovenest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 4482:3000

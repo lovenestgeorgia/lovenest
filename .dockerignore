@@ -1,0 +1,17 @@
+node_modules
+.next
+.git
+.env*
+*.md
+.vscode
+.idea
+coverage
+.vercel
+.DS_Store
+remotion-studio
+test_*.js
+test_*.py
+test-*.js
+*-error-log.txt
+*.zip
+*.pem
