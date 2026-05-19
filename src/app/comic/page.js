@@ -2,7 +2,12 @@ import Link from "next/link";
 import { Sparkles, Plus, ArrowRight, MessageCircle, Upload, Palette, Wand2 } from "lucide-react";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { COMIC_STYLES } from "@/lib/comic/styles";
-import { PRICES, formatPrice } from "@/lib/comic/pricing";
+import {
+    PRICES,
+    formatPrice,
+    HAS_DIGITAL_DISCOUNT,
+    DIGITAL_DISCOUNT_PERCENT,
+} from "@/lib/comic/pricing";
 import { NewProjectButton } from "@/components/comic/NewProjectButton";
 import { PaperGrain } from "@/components/comic/StudioChrome";
 
@@ -93,12 +98,22 @@ export default async function ComicLandingPage() {
                             </Link>
                         </div>
 
-                        {/* Single bundle price */}
-                        <div className="flex items-baseline gap-3 pt-4 text-sm text-text-mutted">
-                            <span className="font-serif text-3xl text-text-dark">
+                        {/* Single bundle price (with optional discount) */}
+                        <div className="flex flex-wrap items-baseline gap-3 pt-4 text-sm text-text-mutted">
+                            {HAS_DIGITAL_DISCOUNT && (
+                                <span className="font-serif text-xl line-through text-text-mutted/55 tabular-nums">
+                                    {formatPrice(PRICES.digitalOriginal)}
+                                </span>
+                            )}
+                            <span className="font-serif text-3xl text-primary tabular-nums">
                                 {formatPrice(PRICES.digital)}
                             </span>
-                            <span className="text-[11px] uppercase tracking-[0.22em] font-mono">
+                            {HAS_DIGITAL_DISCOUNT && (
+                                <span className="inline-flex items-center px-2 py-0.5 bg-primary text-bg-light text-[10px] font-bold uppercase tracking-[0.18em] rounded-full">
+                                    -{DIGITAL_DISCOUNT_PERCENT}%
+                                </span>
+                            )}
+                            <span className="text-[11px] uppercase tracking-[0.22em] font-mono basis-full sm:basis-auto">
                                 ბეჭდური წიგნი · PDF · მიწოდება
                             </span>
                         </div>

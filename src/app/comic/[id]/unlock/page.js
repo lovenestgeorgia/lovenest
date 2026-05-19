@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { isDevUser } from "@/lib/comic/access";
 import { UnlockPaywall } from "@/components/comic/UnlockPaywall";
-import { PRICES, formatPrice } from "@/lib/comic/pricing";
+import { PRICES, formatPrice, HAS_DIGITAL_DISCOUNT, DIGITAL_DISCOUNT_PERCENT } from "@/lib/comic/pricing";
 import { StudioSheet } from "@/components/comic/StudioChrome";
 import { MessageCircle, Wand2, Palette, Download, Truck } from "lucide-react";
 
@@ -34,8 +34,22 @@ export default async function UnlockPage({ params }) {
     return (
         <StudioSheet className="p-8 sm:p-12">
             <header className="text-center max-w-xl mx-auto mb-12">
-                <p className="text-[10px] uppercase tracking-[0.28em] text-text-mutted/70 font-mono mb-4">
-                    შეკვეთა · {formatPrice(PRICES.digital)}
+                <p className="text-[10px] uppercase tracking-[0.28em] text-text-mutted/70 font-mono mb-4 inline-flex items-baseline gap-2 justify-center">
+                    <span>შეკვეთა</span>
+                    <span className="text-text-mutted/40">·</span>
+                    {HAS_DIGITAL_DISCOUNT && (
+                        <span className="line-through text-text-mutted/45 normal-case tracking-normal">
+                            {formatPrice(PRICES.digitalOriginal)}
+                        </span>
+                    )}
+                    <span className="text-primary font-semibold normal-case tracking-normal">
+                        {formatPrice(PRICES.digital)}
+                    </span>
+                    {HAS_DIGITAL_DISCOUNT && (
+                        <span className="ml-1 inline-flex items-center px-1.5 py-0.5 bg-primary text-bg-light text-[9px] font-bold rounded-full leading-none normal-case tracking-normal">
+                            -{DIGITAL_DISCOUNT_PERCENT}%
+                        </span>
+                    )}
                 </p>
                 <h1 className="font-serif text-4xl sm:text-5xl text-text-dark leading-[1.05] tracking-tight">
                     შეუკვეთე შენი <span className="italic text-primary">კომიქსი</span>
