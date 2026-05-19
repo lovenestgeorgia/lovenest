@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { PANEL_BUCKET } from "@/lib/comic/storage";
+import { isDevUser } from "@/lib/comic/access";
+
+// A run that hasn't made progress for this long is treated as dead. Vercel's
+// max function duration is 5 min, so anything past ~7 min is definitely not
+// still running. Keeps the regenerate-all button unblocked when the pipeline
+// crashed before it could reset the project status.
+const STALE_GENERATING_MS = 7 * 60 * 1000;
 
 export async function GET(_req, { params }) {
     const { id } = await params;
@@ -17,7 +24,7 @@ export async function GET(_req, { params }) {
 
 // Wipes all panels (rows + storage objects) for a project so the generation
 // pipeline can run again from scratch. Used by the "regenerate all" button.
-export async function DELETE(_req, { params }) {
+export async function DELETE(req, { params }) {
     const { id } = await params;
     const supabase = await getSupabaseServer();
     const { data: { user } } = await supabase.auth.getUser();
@@ -25,7 +32,7 @@ export async function DELETE(_req, { params }) {
 
     const { data: project } = await supabase
         .from("comic_projects")
-        .select("id, user_id, status")
+        .select("id, user_id, status, updated_at")
         .eq("id", id)
         .single();
     if (!project) return NextResponse.json({ error: "not found" }, { status: 404 });
@@ -33,14 +40,44 @@ export async function DELETE(_req, { params }) {
         return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
 
-    // Block delete-all while a generation run is in flight — otherwise the
-    // in-flight pipeline keeps writing into deleted rows and storage gets
-    // sprinkled with orphans.
+    // Block delete-all while a generation run is genuinely in flight —
+    // otherwise the in-flight pipeline keeps writing into deleted rows and
+    // storage gets sprinkled with orphans. But: a crashed run leaves the
+    // project stuck in "generating" forever, so we also check whether the
+    // most recent panel update is older than STALE_GENERATING_MS. If so, the
+    // pipeline is dead and we proceed. Admins can also force via ?force=1.
     if (project.status === "generating") {
-        return NextResponse.json(
-            { error: "generation in progress; wait until it finishes or fails" },
-            { status: 409 }
-        );
+        const force =
+            new URL(req.url).searchParams.get("force") === "1" && isDevUser(user);
+
+        let stale = false;
+        if (!force) {
+            const { data: latest } = await supabase
+                .from("comic_panels")
+                .select("updated_at")
+                .eq("project_id", id)
+                .order("updated_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+            const latestActivity = latest?.updated_at || project.updated_at;
+            const ageMs = latestActivity
+                ? Date.now() - new Date(latestActivity).getTime()
+                : Infinity;
+            stale = ageMs > STALE_GENERATING_MS;
+            if (!stale) {
+                const minutes = Math.max(1, Math.round(ageMs / 60_000));
+                return NextResponse.json(
+                    {
+                        error: `generation in progress (last update ${minutes} min ago); wait until it finishes or fails`,
+                    },
+                    { status: 409 }
+                );
+            }
+            console.warn(
+                `[panels DELETE] project ${id} status=generating but stale ` +
+                    `(no activity for ${Math.round(ageMs / 60_000)} min) — proceeding`
+            );
+        }
     }
 
     const admin = getSupabaseAdmin();
