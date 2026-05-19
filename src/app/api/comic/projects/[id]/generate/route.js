@@ -427,7 +427,6 @@ export async function POST(_req, { params }) {
                                 id: row.id,
                                 ord: row.ord,
                                 stage: "drawing",
-                                provider: getArtProvider(),
                                 attempt: attempt + 1,
                             });
                             const artResult = await generatePanelArt({
@@ -455,7 +454,6 @@ export async function POST(_req, { params }) {
                                     id: row.id,
                                     ord: row.ord,
                                     image_data_url: `data:image/png;base64,${base64}`,
-                                    provider: "openai",
                                 });
                             }
                             if (needsText) {
@@ -465,7 +463,6 @@ export async function POST(_req, { params }) {
                                         id: row.id,
                                         ord: row.ord,
                                         stage: "writing",
-                                        provider: "gemini",
                                     });
                                     const overlayPrompt = buildTextOverlayPrompt({
                                         pageType: row.page_type,

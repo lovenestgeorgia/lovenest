@@ -184,20 +184,17 @@ export function GenerationProgress({ projectId, expectedCount, initialPanels, sh
                 setPhase("drawing");
                 break;
             case "panel-stage":
-                // Server signals which sub-pass we're on, plus the provider
-                // currently running (openai or gemini for drawing; gemini
-                // always for writing).
+                // Server signals which sub-pass we're on (drawing the panel
+                // art, then writing the Georgian text on top).
                 setPanels((ps) =>
                     ps.map((p) =>
-                        p.id === ev.id
-                            ? { ...p, stage: ev.stage, drawing_provider: ev.provider || p.drawing_provider }
-                            : p
+                        p.id === ev.id ? { ...p, stage: ev.stage } : p
                     )
                 );
                 break;
             case "panel-art":
                 // First-pass result: text-free art. Render it so the user can
-                // watch Gemini add Georgian text on top.
+                // watch the text get layered on top.
                 setPanels((ps) =>
                     ps.map((p) =>
                         p.id === ev.id
@@ -205,7 +202,6 @@ export function GenerationProgress({ projectId, expectedCount, initialPanels, sh
                                   ...p,
                                   art_url: ev.image_data_url,
                                   stage: "writing",
-                                  drawing_provider: ev.provider || p.drawing_provider,
                               }
                             : p
                     )
@@ -842,23 +838,15 @@ function ActivePanelShowcase({ panel, regenerating }) {
                 </div>
             )}
 
-            {/* Provider badge — surfaces which AI is currently working */}
+            {/* Stage badge — surfaces what pass is currently running */}
             {isGenerating && (
-                <ProviderBadge
-                    stage={hasArtPreview ? "writing" : panel?.stage || "drawing"}
-                    drawingProvider={panel?.drawing_provider}
-                />
+                <StageBadge stage={hasArtPreview ? "writing" : panel?.stage || "drawing"} />
             )}
         </div>
     );
 }
 
-function providerLabel(provider) {
-    if (provider === "openai") return "GPT";
-    return "Gemini";
-}
-
-function ProviderBadge({ stage, drawingProvider }) {
+function StageBadge({ stage }) {
     const isWriting = stage === "writing";
     return (
         <motion.div
@@ -872,16 +860,16 @@ function ProviderBadge({ stage, drawingProvider }) {
             {isWriting ? (
                 <>
                     <Type size={10} className="text-primary" />
-                    <span className="text-text-dark">Gemini</span>
+                    <span className="text-text-dark">ტექსტი</span>
                     <span className="text-text-mutted/60">·</span>
-                    <span>ტექსტი</span>
+                    <span>02</span>
                 </>
             ) : (
                 <>
                     <Sparkles size={10} className="text-primary" />
-                    <span className="text-text-dark">{providerLabel(drawingProvider)}</span>
+                    <span className="text-text-dark">კადრი</span>
                     <span className="text-text-mutted/60">·</span>
-                    <span>კადრი</span>
+                    <span>01</span>
                 </>
             )}
         </motion.div>
