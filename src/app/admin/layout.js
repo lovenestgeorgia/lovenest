@@ -35,6 +35,7 @@ export default async function AdminLayout({ children }) {
                     <AdminNavLink href="/admin">მთავარი</AdminNavLink>
                     <AdminNavLink href="/admin/orders">შეკვეთები</AdminNavLink>
                     <AdminNavLink href="/admin/projects">პროექტები</AdminNavLink>
+                    <AdminNavLink href="/admin/promocodes">პრომოკოდები</AdminNavLink>
                 </nav>
             </header>
 

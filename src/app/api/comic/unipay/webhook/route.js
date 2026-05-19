@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
+import { consumePromocode } from "@/lib/comic/promocodes";
 
 export const runtime = "nodejs";
 
@@ -97,7 +98,7 @@ export async function POST(req) {
     // 2. Order must exist
     const { data: order } = await admin
         .from("comic_orders")
-        .select("id, project_id, user_id, amount, type, payment_status, unipay_order_id, shipping_name, shipping_phone, shipping_city, shipping_address")
+        .select("id, project_id, user_id, amount, type, payment_status, unipay_order_id, shipping_name, shipping_phone, shipping_city, shipping_address, promocode")
         .eq("id", orderId)
         .single();
 
@@ -202,6 +203,22 @@ export async function POST(req) {
             .eq("id", order.project_id);
         if (projErr) console.error("[COMIC WEBHOOK] project update failed:", projErr);
         else console.log("[COMIC WEBHOOK] flags set", projectUpdate);
+
+        // If a promocode was redeemed on this order, consume one use now that
+        // payment is confirmed. We look up the promocode by code so we don't
+        // also need to store its id on the order row.
+        if (order.promocode) {
+            try {
+                const { data: promo } = await admin
+                    .from("comic_promocodes")
+                    .select("id")
+                    .eq("code", order.promocode)
+                    .maybeSingle();
+                if (promo?.id) await consumePromocode(admin, promo.id);
+            } catch (e) {
+                console.warn("[COMIC WEBHOOK] promocode consume failed:", e.message);
+            }
+        }
 
         const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
         const CHAT = process.env.TELEGRAM_CHAT_ID;

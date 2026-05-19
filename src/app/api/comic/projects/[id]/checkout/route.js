@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { PRICES } from "@/lib/comic/pricing";
+import {
+    validatePromocode,
+    consumePromocode,
+    PROMOCODE_ERROR_LABELS,
+} from "@/lib/comic/promocodes";
 
 export const runtime = "nodejs";
 
@@ -23,7 +28,7 @@ export async function POST(req, { params }) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
 
-    const { type, paymentMethod, customer } = await req.json();
+    const { type, paymentMethod, customer, promocode: promocodeRaw } = await req.json();
     if (!["digital", "print"].includes(type)) {
         return NextResponse.json({ error: "invalid type" }, { status: 400 });
     }
@@ -63,8 +68,33 @@ export async function POST(req, { params }) {
         return NextResponse.json({ error: "print already ordered" }, { status: 409 });
     }
 
-    const amount = PRICES[type];
+    const baseAmount = PRICES[type];
     const admin = getSupabaseAdmin();
+
+    // Re-validate the promocode server-side. Trust nothing the client claimed
+    // about discount or final amount — recompute both from the DB row.
+    let amount = baseAmount;
+    let discountAmount = 0;
+    let promoCode = null;
+    let promoId = null;
+    if (promocodeRaw) {
+        const promo = await validatePromocode(admin, promocodeRaw, baseAmount);
+        if (!promo.valid) {
+            return NextResponse.json(
+                {
+                    error:
+                        PROMOCODE_ERROR_LABELS[promo.reason] ||
+                        "promocode invalid",
+                    promocodeInvalid: true,
+                },
+                { status: 400 }
+            );
+        }
+        amount = promo.finalAmount;
+        discountAmount = promo.discount;
+        promoCode = promo.code;
+        promoId = promo.promocodeId;
+    }
 
     // Normalize + cap user-supplied shipping fields
     const shipping = {
@@ -91,11 +121,52 @@ export async function POST(req, { params }) {
             shipping_phone: shipping.phone,
             shipping_city: shipping.city,
             shipping_address: shipping.address,
+            promocode: promoCode,
+            discount_amount: discountAmount || null,
         })
         .select("id")
         .single();
 
     if (orderErr) return NextResponse.json({ error: orderErr.message }, { status: 500 });
+
+    // ---- Free after discount: skip UniPay entirely ----
+    // 100% codes (or fixed >= base price) make the order free. UniPay's minimum
+    // is 0.50 GEL so we can't roundtrip; instead, mark the order paid in place
+    // and flip the project flags as if a successful webhook had landed.
+    if (amount <= 0 && promoId) {
+        await admin
+            .from("comic_orders")
+            .update({ payment_status: "paid" })
+            .eq("id", order.id)
+            .eq("payment_status", "pending");
+
+        const projectUpdate =
+            type === "digital"
+                ? { paid_digital: true, paid_print: true }
+                : { paid_print: true };
+        await admin
+            .from("comic_projects")
+            .update({ ...projectUpdate, status: "paid" })
+            .eq("id", id);
+
+        await consumePromocode(admin, promoId);
+
+        await notifyComicOrder({
+            order,
+            project,
+            type,
+            amount: 0,
+            shipping,
+            paymentStatus: `Free via promocode ${promoCode}`,
+            user,
+        });
+
+        return NextResponse.json({
+            free: true,
+            orderId: order.id,
+            redirectTo: `/comic/${id}/${type === "digital" ? "story" : "done"}`,
+        });
+    }
 
     // ---- COD print: order is pending until the courier confirms payment ----
     // We do NOT flip paid_print=true here. The order shows up in Telegram so

@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard, Sparkles, Truck } from "lucide-react";
+import {
+    CreditCard,
+    Sparkles,
+    Truck,
+    Tag,
+    Check,
+    X,
+} from "lucide-react";
 import {
     PRICES,
     formatPrice,
@@ -21,6 +28,12 @@ export function UnlockPaywall({ projectId, userEmail }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+    // Promocode state — applied is the validated result the server returned
+    const [promoInput, setPromoInput] = useState("");
+    const [promoChecking, setPromoChecking] = useState(false);
+    const [promoError, setPromoError] = useState(null);
+    const [applied, setApplied] = useState(null); // { code, finalAmount, discount }
+
     const update = (key) => (e) =>
         setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -29,6 +42,43 @@ export function UnlockPaywall({ projectId, userEmail }) {
         form.phone.trim() &&
         form.city.trim() &&
         form.address.trim();
+
+    const effectivePrice = applied ? applied.finalAmount : PRICES.digital;
+
+    const checkPromo = async () => {
+        if (!promoInput.trim() || promoChecking) return;
+        setPromoChecking(true);
+        setPromoError(null);
+        try {
+            const res = await fetch("/api/comic/promocodes/validate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: promoInput.trim() }),
+            });
+            const json = await res.json();
+            if (json.valid) {
+                setApplied({
+                    code: json.code,
+                    finalAmount: json.finalAmount,
+                    discount: json.discount,
+                });
+                setPromoError(null);
+            } else {
+                setApplied(null);
+                setPromoError(json.message || "პრომოკოდი არასწორია");
+            }
+        } catch (e) {
+            setPromoError("შემოწმება ვერ მოხერხდა");
+        } finally {
+            setPromoChecking(false);
+        }
+    };
+
+    const clearPromo = () => {
+        setApplied(null);
+        setPromoInput("");
+        setPromoError(null);
+    };
 
     const pay = async (e) => {
         e?.preventDefault();
@@ -42,6 +92,7 @@ export function UnlockPaywall({ projectId, userEmail }) {
                 body: JSON.stringify({
                     type: "digital",
                     paymentMethod: "unipay",
+                    promocode: applied?.code || undefined,
                     customer: {
                         email: userEmail || "",
                         name: form.name.trim(),
@@ -52,12 +103,25 @@ export function UnlockPaywall({ projectId, userEmail }) {
                 }),
             });
             const json = await res.json();
-            if (!res.ok) throw new Error(json.error || "Payment failed");
+            if (!res.ok) {
+                if (json.promocodeInvalid) {
+                    setApplied(null);
+                    setPromoError(json.error);
+                    setError("პრომოკოდის სტატუსი შეიცვალა. სცადე ხელახლა.");
+                    return;
+                }
+                throw new Error(json.error || "Payment failed");
+            }
+            // Free order via 100% promocode — skip UniPay entirely
+            if (json.free && json.redirectTo) {
+                window.location.href = json.redirectTo;
+                return;
+            }
             if (json.redirectUrl) {
                 window.location.href = json.redirectUrl;
                 return;
             }
-            throw new Error("UniPay did not return a redirect URL");
+            throw new Error("გადახდის ბმული ვერ მივიღეთ");
         } catch (err) {
             setError(err.message);
             setLoading(false);
@@ -124,6 +188,72 @@ export function UnlockPaywall({ projectId, userEmail }) {
                 </div>
             </fieldset>
 
+            {/* Promocode fieldset */}
+            <fieldset className="space-y-3 pt-2">
+                <legend className="flex items-baseline gap-3 mb-1">
+                    <span className="inline-flex w-7 h-7 rounded-full bg-rose-50 text-primary items-center justify-center">
+                        <Tag size={13} />
+                    </span>
+                    <span className="text-[11px] uppercase tracking-[0.24em] font-semibold text-text-mutted">
+                        პრომოკოდი
+                    </span>
+                </legend>
+
+                {applied ? (
+                    <div className="flex items-center justify-between gap-3 bg-rose-50/60 border border-rose-100 rounded-lg px-4 py-3">
+                        <div className="flex items-baseline gap-3 min-w-0">
+                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-bg-light shrink-0">
+                                <Check size={13} />
+                            </span>
+                            <span className="font-mono text-sm font-bold tracking-wider text-text-dark truncate">
+                                {applied.code}
+                            </span>
+                            <span className="text-[12px] text-primary font-semibold">
+                                -{formatPrice(applied.discount)}
+                            </span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={clearPromo}
+                            className="text-text-mutted hover:text-primary transition-colors shrink-0 p-1 -mr-1"
+                            aria-label="წაშალე პრომოკოდი"
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
+                ) : (
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={promoInput}
+                            onChange={(e) => {
+                                setPromoInput(e.target.value);
+                                if (promoError) setPromoError(null);
+                            }}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    checkPromo();
+                                }
+                            }}
+                            placeholder="აქ შეიყვანე კოდი"
+                            className="flex-1 bg-bg-light border border-gray-200 rounded-lg px-3 py-2.5 text-[15px] outline-none focus:border-primary uppercase tracking-wider font-mono"
+                        />
+                        <button
+                            type="button"
+                            onClick={checkPromo}
+                            disabled={!promoInput.trim() || promoChecking}
+                            className="px-4 py-2.5 rounded-lg bg-text-dark text-bg-light text-[13px] font-medium uppercase tracking-[0.16em] hover:bg-primary transition-colors disabled:opacity-40"
+                        >
+                            {promoChecking ? "..." : "გადამოწმება"}
+                        </button>
+                    </div>
+                )}
+                {promoError && (
+                    <p className="text-[12px] text-red-600">{promoError}</p>
+                )}
+            </fieldset>
+
             <div className="space-y-3 pt-2">
                 <button
                     type="submit"
@@ -132,23 +262,36 @@ export function UnlockPaywall({ projectId, userEmail }) {
                 >
                     {loading ? (
                         "გადამისამართება..."
+                    ) : effectivePrice === 0 ? (
+                        <>
+                            <Sparkles size={20} />
+                            <span>დაიწყე უფასოდ</span>
+                        </>
                     ) : (
                         <>
                             <CreditCard size={20} />
                             <span>გადახდე</span>
-                            {HAS_DIGITAL_DISCOUNT && (
+                            {(applied ||
+                                (HAS_DIGITAL_DISCOUNT && PRICES.digitalOriginal)) && (
                                 <span className="line-through text-bg-light/55 text-sm font-medium">
-                                    {formatPrice(PRICES.digitalOriginal)}
+                                    {formatPrice(
+                                        applied ? PRICES.digital : PRICES.digitalOriginal
+                                    )}
                                 </span>
                             )}
-                            <span>{formatPrice(PRICES.digital)}</span>
+                            <span>{formatPrice(effectivePrice)}</span>
                             <Sparkles size={16} />
                         </>
                     )}
                 </button>
-                {HAS_DIGITAL_DISCOUNT && !loading && (
+                {(applied || (HAS_DIGITAL_DISCOUNT && !loading)) && (
                     <p className="text-[11px] uppercase tracking-[0.22em] font-semibold text-primary text-center">
-                        დაზოგე {formatPrice(PRICES.digitalOriginal - PRICES.digital)} · -{DIGITAL_DISCOUNT_PERCENT}%
+                        დაზოგე{" "}
+                        {formatPrice(
+                            applied
+                                ? PRICES.digital - applied.finalAmount + (PRICES.digitalOriginal ? PRICES.digitalOriginal - PRICES.digital : 0)
+                                : PRICES.digitalOriginal - PRICES.digital
+                        )}
                     </p>
                 )}
                 {error && (
