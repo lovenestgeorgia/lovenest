@@ -1,0 +1,112 @@
+default:
+  image: ${DOCKER_IMAGE_DOCKER}
+  tags:
+    # Add tags based on your runners, all runner tags should match to pick a job
+    - micro-ideas
+  services:
+    - name: ${DOCKER_IMAGE_DOCKER_ROOTLESS}
+      alias: docker
+variables:
+  DOCKER_TLS_CERTDIR: "/certs"
+  RELEASE_PATTERN: /^v\d+\.\d+\.\d+$/
+  RELEASE_PATTERN_BASH: '^v[0-9]+\.[0-9]+\.[0-9]+$'
+  DOCKER_IMAGE_NODE: docker.io/node:20-bookworm-slim
+  DOCKER_IMAGE_DOCKER: docker.io/docker:27
+  DOCKER_IMAGE_DOCKER_ROOTLESS: docker.io/docker:27-dind-rootless
+  GITLAB_RELEASE_DOCKER_IMAGE: gitlab/glab:latest
+  PROD_DOCKER_PROJECT: prod
+  PROD_DOCKER_IMAGENAME: prod-docker
+stages:
+  - build
+  - install
+  - test
+  - test-integration
+  - sign
+  - verify
+  - retag
+  - release
+  - deploy
+include:
+# - template: Security/Secret-Detection.gitlab-ci.yml enable if you want secret detection service, runs on test stage, no setup needed, enable job below too
+# - template: Jobs/Container-Scanning.gitlab-ci.yml enable if you want docker container scanning
+# - template: Cosign.gitlab-ci.yml enable for docker cosign, you need to configure PKI to use this
+.default-rules:
+  rules:
+    - if: '$RENOVATE == "1"'
+      when: never
+    - if: '$DOCKER_IMAGE_SCAN == "1"'
+      when: never
+    - if: "$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH"
+      when: always
+    - if: "$CI_COMMIT_TAG =~ $RELEASE_PATTERN"
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: "$CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS"
+      when: never
+    - if: $CI_COMMIT_BRANCH
+  release-rules:
+    - if: '$CI_COMMIT_TAG =~ $RELEASE_PATTERN'
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "manual"
+      when: never
+
+# Main docker build/push template
+.package-docker-job:template:
+  stage: build
+  before_script:
+    - docker info
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+  script:
+    - export DOCKER_FULLNAME=${CI_REGISTRY_IMAGE}/${DOCKER_PROJECT}/${DOCKER_IMAGENAME}:${DOCKER_TAG}
+    - docker pull ${DOCKER_FULLNAME} || true
+    - >
+      docker build --pull --no-cache --tag ${DOCKER_FULLNAME} --build-arg GIT_COMMIT_BRANCH=${CI_COMMIT_BRANCH} --build-arg GIT_COMMIT_SHA=${CI_COMMIT_REF_SLUG} --build-arg GIT_COMMIT_TIMESTAMP=${CI_COMMIT_TIMESTAMP} --build-arg APP_VERSION=${APP_VERSION} --build-arg IMAGE=$IMAGE -f ${DOCKERFILE_PATH}/Dockerfile .
+
+    - docker push ${DOCKER_FULLNAME}
+  rules:
+    - !reference [.default-rules, rules]
+push-prod-back:
+  tags:
+    - micro-ideas-prod
+  extends: .package-docker-job:template
+  variables:
+    DOCKER_PROJECT: ${PROD_DOCKER_PROJECT}
+    DOCKER_IMAGENAME: ${PROD_DOCKER_IMAGENAME}
+    DOCKER_TAG: ${CI_COMMIT_SHA}
+    DOCKERFILE_PATH: .
+    APP_VERSION: ${CI_COMMIT_BRANCH}
+  after_script:
+    - echo $CI_PROJECT_PATH
+    - echo GITLAB DOCKER IMAGE WILL BE ${CI_REGISTRY}/${CI_PROJECT_PATH}:${CI_COMMIT_TAG}
+    - echo Docker Full Name ${CI_REGISTRY_IMAGE}/${DOCKER_PROJECT}/${DOCKER_IMAGENAME}:${DOCKER_TAG}
+  rules:
+    - if: $CI_COMMIT_BRANCH == "prod"
+prod-deployment:
+  stage: deploy
+  tags:
+    - micro-ideas-prod
+  environment:
+    name: prod
+  before_script:
+    - docker info
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+  script:
+    - echo "Prod job executed"
+    - export DOCKER_FULLNAME=${CI_REGISTRY_IMAGE}/${PROD_DOCKER_PROJECT}/${PROD_DOCKER_IMAGENAME}:${CI_COMMIT_SHA}
+    - docker compose -f compose.prod.yml pull
+    - docker compose -f compose.prod.yml up -d --force-recreate
+  rules:
+    - if: $CI_COMMIT_BRANCH == "prod"
+# This is DEVELOPMENT DEPLOYMENT using docker-compose and local Dockerfile build for quick deploy
+deploy-docker-compose:
+  stage: deploy
+  before_script:
+    - docker info
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+  script:
+    - docker compose -f compose.dev.yml down
+    - docker compose -f compose.dev.yml pull
+    - docker compose -f compose.dev.yml up -d --build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'

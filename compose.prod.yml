@@ -1,0 +1,9 @@
+services:
+  lovenest:
+    container_name: lovenest-prod
+    image: ${DOCKER_FULLNAME} # Full Docker Image Name
+    extends:
+      file: compose.base.yml
+      service: lovenest
+    ports:
+      - 127.0.0.1:${APP_PORT:-4537}:3000 # It is recommended to not have production app exposed publically
