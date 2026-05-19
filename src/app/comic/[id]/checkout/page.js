@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { ComicCheckout } from "@/components/comic/ComicCheckout";
+import { StudioSheet, StudioHeading } from "@/components/comic/StudioChrome";
 
 export default async function ComicCheckoutPage({ params }) {
     const { id } = await params;
@@ -17,13 +18,13 @@ export default async function ComicCheckoutPage({ params }) {
     if (!project) notFound();
 
     return (
-        <div className="bg-white rounded-3xl border border-rose-100 shadow-sm p-6 md:p-10">
-            <div className="mb-8">
-                <h1 className="text-3xl font-serif text-text-dark mb-2">აირჩიე ფორმატი</h1>
-                <p className="text-text-mutted text-sm">
-                    ციფრულად ჩამოტვირთე ან მიიღე ბეჭდური წიგნი მისამართზე.
-                </p>
-            </div>
+        <StudioSheet className="p-6 sm:p-10">
+            <StudioHeading eyebrow="06 — შეძენა" accent="ფორმატი">
+                აირჩიე
+            </StudioHeading>
+            <p className="text-center text-sm text-text-mutted max-w-md mx-auto mt-3 mb-10 leading-relaxed">
+                ციფრულად ჩამოტვირთე ან მიიღე ბეჭდური წიგნი მისამართზე.
+            </p>
 
             <ComicCheckout
                 projectId={project.id}
@@ -31,6 +32,6 @@ export default async function ComicCheckoutPage({ params }) {
                 hasDigital={project.paid_digital}
                 hasPrint={project.paid_print}
             />
-        </div>
+        </StudioSheet>
     );
 }

@@ -1,7 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { RotateCcw, Pencil, Check, X, MessageSquare, Send } from "lucide-react";
+import {
+    RotateCcw,
+    Pencil,
+    Check,
+    X,
+    MessageSquare,
+    Send,
+    Sparkles,
+    AlertTriangle,
+    ChevronDown,
+    ChevronUp,
+} from "lucide-react";
 
 export function PreviewPanels({ projectId, initialPanels, watermark }) {
     const [panels, setPanels] = useState(initialPanels);
@@ -97,30 +108,32 @@ export function PreviewPanels({ projectId, initialPanels, watermark }) {
                         <span className="absolute top-2 left-2 bg-white/90 text-text-dark text-[10px] font-bold px-2 py-0.5 rounded-full">
                             {pageTypeLabel(p.page_type) || `კადრი ${p.ord}`}
                         </span>
-                        <div className="absolute top-2 right-2 flex gap-1.5">
-                            <button
-                                onClick={() => regenerate(p.id)}
-                                disabled={regenerating[p.id]}
-                                className="bg-white/95 hover:bg-white px-2.5 py-1.5 rounded-full text-text-dark shadow-md text-[11px] font-semibold inline-flex items-center gap-1 transition-all hover:scale-105 disabled:opacity-50"
-                                title="ხელახლა (იგივე ისტორიით)"
-                            >
-                                <RotateCcw size={12} /> ხელახლა
-                            </button>
-                            <button
-                                onClick={() =>
-                                    setRetryOpen((o) => ({ ...o, [p.id]: !o[p.id] }))
-                                }
-                                disabled={regenerating[p.id]}
-                                className={`px-2.5 py-1.5 rounded-full shadow-md text-[11px] font-semibold inline-flex items-center gap-1 transition-all hover:scale-105 disabled:opacity-50 ${
-                                    retryOpen[p.id]
-                                        ? "bg-primary text-white"
-                                        : "bg-white/95 hover:bg-white text-text-dark"
-                                }`}
-                                title="ხელახლა შენიშვნით"
-                            >
-                                <MessageSquare size={12} /> შენიშვნა
-                            </button>
-                        </div>
+                        {(p.status === "ready" || p.status === "failed" || p.status === "generating") && (
+                            <div className="absolute top-2 right-2 flex gap-1.5">
+                                <button
+                                    onClick={() => regenerate(p.id)}
+                                    disabled={regenerating[p.id]}
+                                    className="bg-white/95 hover:bg-white px-2.5 py-1.5 rounded-full text-text-dark shadow-md text-[11px] font-semibold inline-flex items-center gap-1 transition-all hover:scale-105 disabled:opacity-50"
+                                    title="ხელახლა (იგივე ისტორიით)"
+                                >
+                                    <RotateCcw size={12} /> ხელახლა
+                                </button>
+                                <button
+                                    onClick={() =>
+                                        setRetryOpen((o) => ({ ...o, [p.id]: !o[p.id] }))
+                                    }
+                                    disabled={regenerating[p.id]}
+                                    className={`px-2.5 py-1.5 rounded-full shadow-md text-[11px] font-semibold inline-flex items-center gap-1 transition-all hover:scale-105 disabled:opacity-50 ${
+                                        retryOpen[p.id]
+                                            ? "bg-primary text-white"
+                                            : "bg-white/95 hover:bg-white text-text-dark"
+                                    }`}
+                                    title="ხელახლა შენიშვნით"
+                                >
+                                    <MessageSquare size={12} /> შენიშვნა
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Retry-with-comment textarea */}
@@ -215,9 +228,123 @@ export function PreviewPanels({ projectId, initialPanels, watermark }) {
                                 </>
                             )}
                         </div>
+
+                        {/* Critic verdict — shows AI's review of this panel */}
+                        {p.critique && <CritiqueBlock critique={p.critique} />}
                     </div>
                 </div>
             ))}
+        </div>
+    );
+}
+
+function CritiqueBlock({ critique }) {
+    const [open, setOpen] = useState(false);
+    const score = critique.score || 6;
+    const verdict = critique.overall || "acceptable";
+
+    const tone =
+        verdict === "good"
+            ? { dot: "bg-green-500", text: "text-green-700", label: "კარგია" }
+            : verdict === "needs_redo"
+            ? { dot: "bg-red-500", text: "text-red-700", label: "გადახატე" }
+            : { dot: "bg-amber-500", text: "text-amber-700", label: "ცოტა გასაუმჯობესებელია" };
+
+    const textIssues = (critique.text_check?.bubbles || []).filter((b) => b?.ok === false);
+    const captionIssue = critique.text_check?.caption && critique.text_check.caption.ok === false
+        ? critique.text_check.caption
+        : null;
+    const visualIssues = critique.visual_issues || [];
+    const suggestions = critique.suggestions || [];
+
+    const hasDetails =
+        textIssues.length > 0 ||
+        captionIssue ||
+        visualIssues.length > 0 ||
+        suggestions.length > 0;
+
+    return (
+        <div className="mt-3 pt-3 border-t border-rose-100/60">
+            <button
+                onClick={() => setOpen((v) => !v)}
+                className="w-full flex items-center justify-between gap-2 text-left group"
+            >
+                <div className="flex items-center gap-2 min-w-0">
+                    <span className={`relative flex h-2 w-2 shrink-0`}>
+                        <span className={`absolute inset-0 rounded-full ${tone.dot} opacity-75 animate-pulse`} />
+                        <span className={`relative inline-flex rounded-full h-2 w-2 ${tone.dot}`} />
+                    </span>
+                    <span className={`text-[11px] uppercase tracking-[0.18em] font-semibold ${tone.text}`}>
+                        AI: {tone.label}
+                    </span>
+                    <span className="text-[10px] font-mono text-text-mutted/60 tabular-nums">
+                        {score}/10
+                    </span>
+                </div>
+                {hasDetails && (
+                    <span className="text-text-mutted/60 group-hover:text-primary transition-colors">
+                        {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </span>
+                )}
+            </button>
+
+            {open && hasDetails && (
+                <div className="mt-3 space-y-3 text-xs">
+                    {textIssues.length > 0 && (
+                        <div>
+                            <p className="font-semibold text-text-dark mb-1.5 flex items-center gap-1.5">
+                                <AlertTriangle size={11} className="text-amber-600" />
+                                ტექსტი
+                            </p>
+                            <ul className="space-y-1.5 text-text-mutted leading-snug">
+                                {textIssues.map((b, i) => (
+                                    <li key={i}>
+                                        <span className="text-red-600 font-mono">{b.rendered || "(ცარიელი)"}</span>
+                                        {" → "}
+                                        <span className="text-green-700 font-mono">{b.expected}</span>
+                                        {b.note && <span className="block text-text-mutted/70 mt-0.5">{b.note}</span>}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {captionIssue && (
+                        <div>
+                            <p className="font-semibold text-text-dark mb-1.5">წარწერა</p>
+                            <p className="text-text-mutted leading-snug">
+                                <span className="text-red-600 font-mono">{captionIssue.rendered || "(ცარიელი)"}</span>
+                                {" → "}
+                                <span className="text-green-700 font-mono">{captionIssue.expected}</span>
+                            </p>
+                        </div>
+                    )}
+
+                    {visualIssues.length > 0 && (
+                        <div>
+                            <p className="font-semibold text-text-dark mb-1.5">ვიზუალური</p>
+                            <ul className="space-y-1 text-text-mutted leading-snug list-disc list-inside">
+                                {visualIssues.map((v, i) => (
+                                    <li key={i}>{v}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {suggestions.length > 0 && (
+                        <div>
+                            <p className="font-semibold text-primary mb-1.5 flex items-center gap-1.5">
+                                <Sparkles size={11} /> რჩევები
+                            </p>
+                            <ul className="space-y-1 text-text-mutted leading-snug list-disc list-inside">
+                                {suggestions.map((s, i) => (
+                                    <li key={i}>{s}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

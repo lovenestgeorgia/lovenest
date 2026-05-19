@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { isDevUser } from "@/lib/comic/access";
-import { Download, Truck, Sparkles } from "lucide-react";
+import { StudioSheet } from "@/components/comic/StudioChrome";
+import { Download, Truck } from "lucide-react";
 
 export default async function DonePage({ params }) {
     const { id } = await params;
@@ -27,29 +28,36 @@ export default async function DonePage({ params }) {
     const canDownload = project.paid_digital || devAccess;
 
     return (
-        <div className="bg-white rounded-3xl border border-rose-100 shadow-sm p-6 md:p-10 space-y-8">
-            <div className="text-center space-y-3">
-                <div className="w-16 h-16 mx-auto rounded-full bg-rose-50 text-primary flex items-center justify-center">
-                    <Sparkles size={32} />
-                </div>
-                <h1 className="text-3xl font-serif text-text-dark">გილოცავ! 🎉</h1>
-                <p className="text-text-mutted">{project.title}</p>
-            </div>
+        <StudioSheet className="p-8 sm:p-12">
+            {/* Wax-seal style stamp instead of a circle-and-icon */}
+            <header className="text-center mb-12">
+                <p className="text-[10px] uppercase tracking-[0.28em] text-text-mutted/70 font-mono mb-4">
+                    შენი ნამუშევარი
+                </p>
+                <h1 className="font-serif text-5xl sm:text-6xl text-text-dark leading-[1.05] tracking-tight">
+                    {project.title || "კომიქსი"}
+                </h1>
+                <p className="font-serif italic text-primary text-lg mt-3">მზადაა</p>
+            </header>
 
+            {/* Primary action */}
             {canDownload && (
-                <a
-                    href={`/api/comic/projects/${id}/pdf`}
-                    className="elegant-btn w-full inline-flex items-center justify-center gap-2"
-                >
-                    <Download size={18} /> ჩამოტვირთე PDF
-                </a>
+                <div className="max-w-md mx-auto mb-10">
+                    <a
+                        href={`/api/comic/projects/${id}/pdf`}
+                        className="elegant-btn w-full inline-flex items-center justify-center gap-2 py-4 text-lg"
+                    >
+                        <Download size={20} /> ჩამოტვირთე PDF
+                    </a>
+                </div>
             )}
 
+            {/* Print status */}
             {project.paid_print && (
-                <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 flex items-start gap-3">
-                    <Truck className="text-amber-600 shrink-0 mt-1" size={20} />
-                    <div className="text-sm text-text-dark">
-                        <p className="font-semibold mb-1">ბეჭდური წიგნი მზადდება</p>
+                <div className="max-w-md mx-auto mb-10 flex items-start gap-4 border-l border-amber-200 pl-5">
+                    <Truck className="text-amber-700 shrink-0 mt-0.5" size={18} />
+                    <div className="text-sm leading-relaxed">
+                        <p className="text-text-dark font-medium mb-1">ბეჭდური წიგნი მზადდება</p>
                         <p className="text-text-mutted">
                             1-3 დღეში ჩვენი გუნდი დაგიკავშირდება მიწოდების დასაზუსტებლად.
                         </p>
@@ -57,43 +65,62 @@ export default async function DonePage({ params }) {
                 </div>
             )}
 
-            <div>
-                <h2 className="font-serif text-lg text-text-dark mb-3">შენი შეკვეთები</h2>
-                <ul className="space-y-2">
-                    {(orders || []).map((o) => (
-                        <li
-                            key={o.id}
-                            className="bg-rose-50/20 border border-rose-100 rounded-xl px-4 py-3 flex items-center justify-between text-sm"
-                        >
-                            <div>
-                                <span className="font-medium">
-                                    {o.type === "digital" ? "ციფრული" : "ბეჭდური"}
-                                </span>
-                                <span className="text-text-mutted ml-2">
-                                    {o.payment_method === "cod" ? "ნაღდი" : "UniPay"} • {o.amount} ₾
-                                </span>
-                            </div>
-                            <span
-                                className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full ${
-                                    o.payment_status === "paid"
-                                        ? "bg-green-100 text-green-700"
-                                        : o.payment_status === "failed"
-                                        ? "bg-red-100 text-red-700"
-                                        : "bg-amber-100 text-amber-700"
-                                }`}
+            {/* Orders ledger */}
+            {(orders || []).length > 0 && (
+                <div className="max-w-md mx-auto">
+                    <p className="text-[10px] uppercase tracking-[0.28em] text-text-mutted/70 font-mono text-center mb-4">
+                        ლეჯერი
+                    </p>
+                    <ul className="divide-y divide-rose-100/60 border-y border-rose-100/60">
+                        {orders.map((o) => (
+                            <li
+                                key={o.id}
+                                className="flex items-baseline justify-between py-3 text-sm"
                             >
-                                {o.payment_status}
-                            </span>
-                        </li>
-                    ))}
-                </ul>
-            </div>
+                                <div className="flex items-baseline gap-3">
+                                    <span className="font-medium text-text-dark">
+                                        {o.type === "digital" ? "ციფრული" : "ბეჭდური"}
+                                    </span>
+                                    <span className="text-[11px] uppercase tracking-[0.18em] text-text-mutted/70 font-mono">
+                                        {o.payment_method === "cod" ? "ნაღდი" : "unipay"}
+                                    </span>
+                                </div>
+                                <div className="flex items-baseline gap-4">
+                                    <span className="font-mono tabular-nums text-text-dark">
+                                        {Number(o.amount).toFixed(2)} ₾
+                                    </span>
+                                    <OrderStatusDot status={o.payment_status} />
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
 
-            <div className="text-center pt-4 border-t border-rose-50">
-                <Link href={`/comic/${id}/preview`} className="text-sm text-primary hover:underline">
+            <div className="text-center mt-12">
+                <Link
+                    href={`/comic/${id}/preview`}
+                    className="text-[11px] uppercase tracking-[0.22em] text-text-mutted/70 hover:text-primary transition-colors font-medium"
+                >
                     ← გადახედე კომიქსს
                 </Link>
             </div>
-        </div>
+        </StudioSheet>
+    );
+}
+
+function OrderStatusDot({ status }) {
+    const map = {
+        paid: { color: "text-green-700", dot: "bg-green-500", label: "გადახდილია" },
+        failed: { color: "text-red-700", dot: "bg-red-500", label: "შეცდომა" },
+        pending: { color: "text-amber-700", dot: "bg-amber-500", label: "მუშავდება" },
+        cancelled: { color: "text-text-mutted", dot: "bg-text-mutted/40", label: "გაუქმდა" },
+    };
+    const v = map[status] || map.pending;
+    return (
+        <span className={`inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-mono ${v.color}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${v.dot}`} />
+            {v.label}
+        </span>
     );
 }

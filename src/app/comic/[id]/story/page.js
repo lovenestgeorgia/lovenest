@@ -2,10 +2,11 @@ import { notFound } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { ensurePaidDigital } from "@/lib/comic/access";
 import { InterviewChat } from "@/components/comic/InterviewChat";
+import { StudioSheet, StudioHeading } from "@/components/comic/StudioChrome";
 
 export default async function StoryStepPage({ params }) {
     const { id } = await params;
-    await ensurePaidDigital(id);
+    await ensurePaidDigital(id, "story");
     const supabase = await getSupabaseServer();
 
     const [{ data: project }, { data: messages }] = await Promise.all([
@@ -20,19 +21,19 @@ export default async function StoryStepPage({ params }) {
     if (!project) notFound();
 
     return (
-        <div className="bg-white rounded-3xl border border-rose-100 shadow-sm p-6 md:p-10">
-            <div className="mb-8">
-                <h1 className="text-3xl font-serif text-text-dark mb-2">გვიამბე შენი ისტორია</h1>
-                <p className="text-text-mutted text-sm">
-                    დაიწყე ნებისმიერი დეტალით — ვინ, სად, როდის. ჩვენი AI გკითხავს დანარჩენს.
-                </p>
-            </div>
+        <StudioSheet className="p-6 sm:p-10">
+            <StudioHeading eyebrow="01 — ისტორია" accent="ისტორია">
+                გვიამბე შენი
+            </StudioHeading>
+            <p className="text-center text-sm text-text-mutted max-w-md mx-auto mt-3 mb-10 leading-relaxed">
+                დაიწყე ნებისმიერი დეტალით — ვინ, სად, როდის. AI გკითხავს დანარჩენს.
+            </p>
 
             <InterviewChat
                 projectId={project.id}
                 initialMessages={messages || []}
                 initialStory={project.story_text || ""}
             />
-        </div>
+        </StudioSheet>
     );
 }

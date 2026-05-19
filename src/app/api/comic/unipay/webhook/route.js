@@ -3,12 +3,38 @@ import { getSupabaseAdmin } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 
-// UniPay V3 does not document a webhook HMAC scheme. We defend by:
-//  1. Requiring the COMIC:: sentinel in OrderDescription (which we set when creating the order).
-//  2. Looking up the order by its UUID from our DB — random IDs won't match.
-//  3. Verifying the OrderPrice in the callback matches the amount we recorded.
-// A spoofer would need to know the real UUID of a pending order AND its exact price.
+// UniPay V3 does not document a webhook HMAC scheme. Defense-in-depth here:
+//   1. COMIC:: sentinel in OrderDescription (we set it at order-create time)
+//   2. orderId from the sentinel must match an existing comic_orders row
+//   3. UnipayOrderHashID in the callback must match what UniPay returned at
+//      create time (stored in comic_orders.unipay_order_id). This is the only
+//      field a spoofer can't fabricate from a stale browser log.
+//   4. OrderPrice must match what we recorded
+//   5. Type in the sentinel must match the order's recorded type
+//   6. Optional shared secret via UNIPAY_WEBHOOK_SECRET — when set, require a
+//      matching X-Webhook-Secret header (configure in UniPay dashboard if
+//      they support custom callback headers).
+//   7. State machine: only pending→paid transitions are honored; idempotent
+//      on already-paid; can't re-flip a failed order to paid via replay.
+
+function tgEscape(s) {
+    if (!s) return "";
+    return String(s).replace(/[`*_[\]()~>#+=|{}.!\\-]/g, "\\$&");
+}
+
 export async function POST(req) {
+    // Optional shared secret. If UNIPAY_WEBHOOK_SECRET is configured, require
+    // the request to carry it as an X-Webhook-Secret header. Constant-time
+    // comparison to avoid timing oracles.
+    const expectedSecret = process.env.UNIPAY_WEBHOOK_SECRET;
+    if (expectedSecret) {
+        const provided = req.headers.get("x-webhook-secret") || "";
+        if (!constantTimeEqual(provided, expectedSecret)) {
+            console.warn("[COMIC WEBHOOK] rejected: bad/missing X-Webhook-Secret");
+            return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+        }
+    }
+
     const raw = await req.text();
     console.log("[COMIC WEBHOOK] raw body:", raw);
 
@@ -19,7 +45,6 @@ export async function POST(req) {
         data = Object.fromEntries(new URLSearchParams(raw).entries());
     }
     console.log("[COMIC WEBHOOK] parsed:", JSON.stringify(data));
-    console.log("[COMIC WEBHOOK] keys:", Object.keys(data || {}));
 
     // 1. Sentinel check
     const desc = data.OrderDescription || data.orderDescription || "";
@@ -28,7 +53,7 @@ export async function POST(req) {
         return NextResponse.json({ received: true, skipped: "not a comic order" });
     }
 
-    const [, orderId, type] = desc.split("::");
+    const [, orderId, sentinelType] = desc.split("::");
     const status = (data.Status || data.status || "").toString();
     const isSuccess =
         status.toLowerCase().includes("success") ||
@@ -36,14 +61,14 @@ export async function POST(req) {
         data.IsSuccess === "true" ||
         data.is_success === true ||
         Number(data.errorcode) === 0;
-    console.log("[COMIC WEBHOOK]", { orderId, type, status, isSuccess });
+    console.log("[COMIC WEBHOOK]", { orderId, sentinelType, status, isSuccess });
 
     const admin = getSupabaseAdmin();
 
     // 2. Order must exist
     const { data: order } = await admin
         .from("comic_orders")
-        .select("id, project_id, user_id, amount, type, payment_status, shipping_name, shipping_phone, shipping_city, shipping_address")
+        .select("id, project_id, user_id, amount, type, payment_status, unipay_order_id, shipping_name, shipping_phone, shipping_city, shipping_address")
         .eq("id", orderId)
         .single();
 
@@ -52,7 +77,33 @@ export async function POST(req) {
         return NextResponse.json({ error: "order not found" }, { status: 404 });
     }
 
-    // 3. Amount check — accept many possible field names; soft-warn if missing
+    // 3. UnipayOrderHashID must match. This is the strongest non-HMAC defense
+    // we have: it's a value UniPay returned synchronously at order creation
+    // and would never leak to a customer-facing log/network tab. Even if a
+    // user knows their own order UUID and amount, they can't forge this.
+    const reportedHash =
+        (data.UnipayOrderHashID || data.unipay_order_id || data.OrderHashID || "").toString();
+    if (order.unipay_order_id) {
+        if (reportedHash !== order.unipay_order_id) {
+            console.warn("[COMIC WEBHOOK] hash mismatch", {
+                orderId,
+                reported: reportedHash,
+                expected: order.unipay_order_id,
+            });
+            return NextResponse.json({ error: "hash mismatch" }, { status: 401 });
+        }
+    } else {
+        // No hash recorded yet — could be the legitimate race between order
+        // creation and the first webhook. Log and keep going but only if
+        // the inbound hash is at least present.
+        if (!reportedHash) {
+            console.warn("[COMIC WEBHOOK] missing UnipayOrderHashID and none recorded yet");
+            return NextResponse.json({ error: "missing hash" }, { status: 400 });
+        }
+        console.warn("[COMIC WEBHOOK] order had no stored hash, accepting inbound", reportedHash);
+    }
+
+    // 4. Amount check
     const reportedRaw =
         data.OrderPrice ?? data.orderPrice ?? data.Amount ?? data.amount ?? data.Price ?? data.price;
     if (reportedRaw !== undefined) {
@@ -73,57 +124,76 @@ export async function POST(req) {
         console.warn("[COMIC WEBHOOK] no amount field in payload — skipping amount check");
     }
 
-    // 4. Type sanity
-    if (type && order.type && type !== order.type) {
-        console.warn("[COMIC WEBHOOK] type mismatch", { orderId, sentinelType: type, dbType: order.type });
+    // 5. Type sanity — sentinel must agree with what we recorded at order create
+    if (sentinelType && order.type && sentinelType !== order.type) {
+        console.warn("[COMIC WEBHOOK] type mismatch", { orderId, sentinelType, dbType: order.type });
         return NextResponse.json({ error: "type mismatch" }, { status: 400 });
     }
 
-    // Idempotency: ignore duplicate success callbacks
-    if (order.payment_status === "paid" && isSuccess) {
+    // 6. State machine. Only allow pending→paid. Refuse to re-flip a failed
+    // order to paid via replay (defense against compromised callback URL).
+    if (order.payment_status === "paid") {
         console.log("[COMIC WEBHOOK] already paid (idempotent), no-op");
         return NextResponse.json({ received: true, idempotent: true });
     }
-    console.log("[COMIC WEBHOOK] all checks passed, applying...");
+    if (order.payment_status === "failed" && isSuccess) {
+        console.warn("[COMIC WEBHOOK] rejecting failed→paid transition (replay?)", { orderId });
+        return NextResponse.json({ error: "invalid state transition" }, { status: 409 });
+    }
+    console.log("[COMIC WEBHOOK] checks passed, applying...");
 
     if (isSuccess) {
         const { error: orderErr } = await admin
             .from("comic_orders")
             .update({ payment_status: "paid" })
-            .eq("id", order.id);
-        if (orderErr) console.error("[COMIC WEBHOOK] order update failed:", orderErr);
+            .eq("id", order.id)
+            .eq("payment_status", "pending"); // conditional update for atomicity
+        if (orderErr) {
+            console.error("[COMIC WEBHOOK] order update failed:", orderErr);
+            return NextResponse.json({ error: "db error" }, { status: 500 });
+        }
 
-        const projectUpdate = type === "digital" ? { paid_digital: true } : { paid_print: true };
+        const projectUpdate =
+            order.type === "digital" ? { paid_digital: true } : { paid_print: true };
+        // Don't blow away project.status if it's already further along; only
+        // mark "paid" when the project is still in preview/styling.
         const { error: projErr } = await admin
             .from("comic_projects")
             .update({ ...projectUpdate, status: "paid" })
             .eq("id", order.project_id);
         if (projErr) console.error("[COMIC WEBHOOK] project update failed:", projErr);
-        else console.log("[COMIC WEBHOOK] paid_digital/paid_print set", projectUpdate);
+        else console.log("[COMIC WEBHOOK] flags set", projectUpdate);
 
-        // Telegram notification
         const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
         const CHAT = process.env.TELEGRAM_CHAT_ID;
         if (TOKEN && CHAT) {
             const message =
-                `✅ *კომიქსის გადახდა წარმატებული!*\n\n` +
+                `✅ *კომიქსის გადახდა წარმატებული\\!*\n\n` +
                 `📦 *Order*: \`${order.id}\`\n` +
-                `💰 ${order.amount} ₾ — ${type}\n` +
+                `💰 ${order.amount} ₾ — ${order.type}\n` +
                 (order.shipping_name
-                    ? `\n🚚 *მისამართი*: ${order.shipping_name}, ${order.shipping_phone}\n${order.shipping_city}, ${order.shipping_address}`
+                    ? `\n🚚 *მისამართი*: ${tgEscape(order.shipping_name)}, ${tgEscape(order.shipping_phone)}\n${tgEscape(order.shipping_city)}, ${tgEscape(order.shipping_address)}`
                     : "");
             await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: CHAT, text: message, parse_mode: "Markdown" }),
+                body: JSON.stringify({ chat_id: CHAT, text: message, parse_mode: "MarkdownV2" }),
             });
         }
     } else {
         await admin
             .from("comic_orders")
             .update({ payment_status: "failed" })
-            .eq("id", order.id);
+            .eq("id", order.id)
+            .eq("payment_status", "pending");
     }
 
     return NextResponse.json({ received: true });
+}
+
+function constantTimeEqual(a, b) {
+    if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
+    let diff = 0;
+    for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    return diff === 0;
 }

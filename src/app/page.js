@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Heart, BookHeart, Sparkles, Star, Navigation, CheckCircle, Truck, Gift, ChevronDown, BookOpen } from "lucide-react";
+import { Heart, BookHeart, Sparkles, Star, Navigation, CheckCircle, Truck, Gift, ChevronDown, ChevronRight, ArrowRight, BookOpen } from "lucide-react";
 import { Countdown } from "@/components/Countdown";
 import { FOMOToast } from "@/components/FOMOToast";
 import { reviews } from "@/data/reviews";
@@ -41,31 +41,47 @@ function TiltCard({ children, className }) {
   );
 }
 
+// Recipient types shown in the "ვისთვის არის იდეალური" section.
+// First entry is rendered as the FEATURED card (large, with badge). The rest
+// fill the secondary grid. Image paths are local /public assets — swap with
+// proper subject photos once they are produced.
 const idealForData = [
   {
     title: "შეყვარებულისთვის",
+    tag: "ყველაზე პოპულარული",
     desc: "უთხარი ის, რასაც ხშირად ვერ ეუბნები. გაუზიარე შენი ყველაზე ღრმა გრძნობები უნიკალური გზით.",
     image: "/ideal_lovers.jpg",
-    gradient: "from-rose-600/90 to-pink-500/90"
   },
   {
-    title: "მანძილზე სიყვარულისთვის",
-    desc: "როცა მონატრება ყველაზე ძლიერია. ეს წიგნი ყოველთვის მის გვერდით იქნება, მაშინაც კი როცა შორს ხარ.",
+    title: "დედისთვის",
+    tag: "სამადლობელი",
+    desc: "84 გვერდი მადლობისა, რომელიც ვერასდროს ბოლომდე გამოვთქვი.",
+    image: "/ideal_anniversary.jpg",
+  },
+  {
+    title: "მამისთვის",
+    tag: "გმირისთვის",
+    desc: "სიტყვები, რომელიც ბავშვობიდან გინდოდა, რომ მოგესმინა მისგან. ახლა მის ხელშია.",
     image: "/ideal_longdistance.jpg",
-    gradient: "from-blue-600/90 to-indigo-500/90"
+  },
+  {
+    title: "ბავშვისთვის",
+    tag: "უანდერძე",
+    desc: "სიყვარულის წერილები, რომელსაც დიდი რომ გახდება, წაიკითხავს და გრძნობს ჩვენ მთელ მსოფლიოს.",
+    image: "/470901438_17872310865248691_4842326323820694113_n.jpg",
   },
   {
     title: "წლისთავისთვის",
-    desc: "საუკეთესო საჩუქარი აღსანიშნავ დღეს. შეკრიბეთ თქვენი ყველაზე ტკბილი მოგონებები ერთად.",
-    image: "/ideal_anniversary.jpg",
-    gradient: "from-amber-600/90 to-orange-500/90"
+    tag: "მოგონებები",
+    desc: "ერთობლივი წლები, შეფუთული ერთ წიგნად. ყველაზე ტკბილი მომენტებიდან.",
+    image: "/475530985_17878046565248691_7135969833605092257_n.jpg",
   },
   {
     title: "მეგობრისთვის",
-    desc: "რადგან მეგობრობაც დიდი სიყვარულია. აგრძნობინე შენს საუკეთესო მეგობარს, თუ რამდენს ნიშნავს შენთვის.",
+    tag: "ძმობა",
+    desc: "მეგობრობაც დიდი სიყვარულია. აგრძნობინე, რას ნიშნავს ის შენთვის.",
     image: "/ideal_bestfriend.jpg",
-    gradient: "from-emerald-600/90 to-teal-500/90"
-  }
+  },
 ];
 
 const faqs = [
@@ -117,264 +133,492 @@ export default function Home() {
       </div>
 
       <main className="relative z-10 pt-24 sm:pt-32">
-        {/* Hero Section */}
-        <section className="relative min-h-[85vh] flex items-center justify-center pb-12 px-6">
-          <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-rose-50 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
-          <div className="absolute bottom-[10%] left-[-10%] w-[500px] h-[500px] bg-secondary blur-3xl opacity-50 z-0 pointer-events-none"></div>
+        {/* Hero — in the lovenest house style, amplified: warmer, rounder, more confident */}
+        <section className="relative min-h-[88vh] flex items-center justify-center pb-16 sm:pb-24 px-6">
+          {/* Hero-specific warm blooms, larger than the global background blobs */}
+          <motion.div
+            aria-hidden
+            animate={{ scale: [1, 1.08, 1], opacity: [0.5, 0.7, 0.5] }}
+            transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-[-12%] right-[-8%] w-[640px] h-[640px] bg-rose-200/45 rounded-full blur-[120px] pointer-events-none"
+          />
+          <motion.div
+            aria-hidden
+            animate={{ scale: [1, 1.05, 1], opacity: [0.35, 0.55, 0.35] }}
+            transition={{ duration: 14, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+            className="absolute bottom-[-10%] left-[-8%] w-[560px] h-[560px] bg-amber-100/55 rounded-full blur-[110px] pointer-events-none"
+          />
+          <motion.div
+            aria-hidden
+            animate={{ scale: [1, 1.12, 1], opacity: [0.18, 0.32, 0.18] }}
+            transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            className="absolute top-1/3 right-1/3 w-[360px] h-[360px] bg-primary/15 rounded-full blur-[140px] pointer-events-none"
+          />
 
-          <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center relative z-10">
+          <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_1.05fr] gap-12 lg:gap-16 items-center relative z-10">
 
-            {/* Text Content */}
-            <div className="order-2 lg:order-1 flex flex-col items-center lg:items-start text-center lg:text-left space-y-6">
+            {/* LEFT — type column, brand house style amplified */}
+            <div className="order-2 lg:order-1 flex flex-col items-center lg:items-start text-center lg:text-left">
+
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 rounded-full text-primary font-medium text-xs border border-rose-100 shadow-sm"
+                transition={{ duration: 0.7, ease: [0.2, 0.8, 0.2, 1] }}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-rose-50 rounded-full text-primary font-semibold text-xs sm:text-[13px] border border-rose-100 shadow-[0_8px_24px_-12px_rgba(138,31,59,0.18)]"
               >
-                <Star size={12} className="fill-current text-yellow-500" />
-                <span className="text-text-dark">ყველაზე პოპულარული სასაჩუქრე წიგნი</span>
+                <Heart size={13} className="fill-current" />
+                <span>ყველაზე პოპულარული სასაჩუქრე წიგნი</span>
               </motion.div>
 
               <motion.h1
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.1 }}
-                className="text-5xl md:text-6xl lg:text-7xl font-serif text-text-dark leading-[1.05]"
+                transition={{ duration: 0.9, delay: 0.1, ease: [0.2, 0.8, 0.2, 1] }}
+                className="mt-7 font-serif text-text-dark leading-[0.95] tracking-[-0.015em]"
               >
-                წამიკითხე <br /><span className="text-primary italic">როცა დაგჭირდები</span>
+                <span className="block text-[3.5rem] sm:text-7xl lg:text-[6rem] xl:text-[7rem] font-bold">
+                  წამიკითხე
+                </span>
+                <motion.span
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, delay: 0.45, ease: [0.2, 0.8, 0.2, 1] }}
+                  className="block mt-3 sm:mt-4 text-3xl sm:text-4xl lg:text-5xl xl:text-[3.5rem] italic font-light text-primary"
+                >
+                  როცა დაგჭირდები
+                </motion.span>
               </motion.h1>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.15 }}
-                className="flex items-center gap-2 text-sm font-medium text-text-dark"
-              >
-                <div className="flex gap-0.5 text-yellow-500">
-                  {[...Array(5)].map((_, i) => <Star key={i} size={16} className="fill-current" />)}
-                </div>
-                <span className="opacity-70">(1000+ ბედნიერი მომხმარებელი)</span>
-              </motion.div>
-
               <motion.p
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="text-lg md:text-xl text-text-mutted max-w-lg font-light leading-relaxed"
+                transition={{ duration: 0.7, delay: 0.55 }}
+                className="mt-7 max-w-md lg:max-w-lg text-base sm:text-lg text-text-mutted font-light leading-relaxed"
               >
-                84 გვერდში ჩატეული სიყვარული. დაუტოვე შენს საყვარელ ადამიანს შენი სიტყვები ზუსტად იმ მომენტებისთვის, როცა ეს ყველაზე მეტად დასჭირდება.
+                84 გვერდი ჩატეული სიყვარულით. დაუტოვე შენი სიტყვები ზუსტად იმ მომენტებისთვის, როცა ეს ყველაზე მეტად დასჭირდება.
               </motion.p>
 
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.3 }}
-                className="flex flex-col sm:flex-row gap-4 pt-4 w-full sm:w-auto"
+                transition={{ duration: 0.7, delay: 0.7 }}
+                className="mt-9 sm:mt-10 flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto"
               >
-                <Link href="/shop/read-me" className="elegant-btn text-lg group w-full sm:w-auto justify-center shadow-lg shadow-rose-200">
+                <Link
+                  href="/shop/read-me"
+                  className="elegant-btn text-base sm:text-lg group w-full sm:w-auto shadow-[0_18px_40px_-14px_rgba(138,31,59,0.45)] hover:shadow-[0_22px_48px_-12px_rgba(138,31,59,0.55)]"
+                >
                   <span className="font-semibold">შეიძინე 39 ₾</span>
-                  <Sparkles size={18} className="ml-2 group-hover:rotate-12 transition-transform" />
+                  <Sparkles size={18} className="ml-2.5 group-hover:rotate-12 transition-transform" />
                 </Link>
-                <Link href="#info" className="elegant-btn-outline text-lg w-full sm:w-auto justify-center flex items-center gap-2">
-                  გაიგე მეტი <ChevronDown size={18} />
+                <Link
+                  href="#info"
+                  className="text-sm text-text-mutted hover:text-primary transition-colors inline-flex items-center gap-1.5 group"
+                >
+                  <span className="underline underline-offset-[6px] decoration-text-mutted/30 group-hover:decoration-primary/60">
+                    ვრცლად წიგნზე
+                  </span>
+                  <ChevronDown size={14} className="group-hover:translate-y-0.5 transition-transform" />
                 </Link>
               </motion.div>
 
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-                className="flex flex-wrap items-center gap-4 text-xs font-semibold text-primary/80 pt-2 bg-rose-50/50 px-4 py-2 rounded-full border border-rose-100/50"
+                transition={{ duration: 0.6, delay: 0.9 }}
+                className="mt-7 sm:mt-8 flex items-center gap-3 text-sm font-medium text-text-dark"
               >
-                <span className="flex items-center gap-1"><span className="relative flex h-2 w-2 mr-1"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span> მხოლოდ დღეს: უფასო სასაჩუქრე შეფუთვა 🎁</span>
+                <div className="flex gap-0.5 text-yellow-500">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} size={15} className="fill-current" />
+                  ))}
+                </div>
+                <span className="text-text-mutted">1000+ ბედნიერი წყვილი · 4.9/5</span>
               </motion.div>
             </div>
 
-            {/* Image Content */}
+            {/* RIGHT — book hero card, rounded-[2.5rem] in brand vocabulary */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.94 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1, ease: "easeOut" }}
+              transition={{ duration: 1.1, ease: [0.2, 0.8, 0.2, 1] }}
               className="order-1 lg:order-2 relative w-full flex justify-center lg:justify-end"
             >
-              <div className="relative w-full max-w-md aspect-[4/5] sm:aspect-[3/4]">
-                {/* Decorative border */}
-                <div className="absolute inset-0 border-2 border-primary/20 rounded-[2rem] transform translate-x-4 translate-y-4"></div>
+              <div className="relative w-full max-w-md aspect-[4/5]">
+                {/* Bolder offset decorative ring — pushed further for drama (brand vocab amplified) */}
+                <div
+                  aria-hidden
+                  className="absolute inset-0 rounded-[2.5rem] border-2 border-primary/25 translate-x-5 translate-y-5"
+                />
+                {/* Secondary softer ring — adds depth without breaking the language */}
+                <div
+                  aria-hidden
+                  className="absolute inset-0 rounded-[2.5rem] border border-rose-200/50 translate-x-2.5 translate-y-2.5"
+                />
 
-                {/* Main Hero Image */}
-                <div className="absolute inset-0 rounded-[2rem] overflow-hidden shadow-2xl group cursor-pointer border border-rose-100">
+                {/* Image card */}
+                <div className="absolute inset-0 rounded-[2.5rem] overflow-hidden shadow-[0_40px_80px_-25px_rgba(138,31,59,0.35)] border border-rose-100 group cursor-pointer bg-bg-light">
                   <Image
                     src="/hero.png"
-                    alt="წამიკითხე როცა დაგჭირდები - წიგნი"
+                    alt="წამიკითხე როცა დაგჭირდები"
                     fill
-                    className="object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                    className="object-cover object-center group-hover:scale-[1.04] transition-transform duration-[900ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]"
                     priority
                   />
-
-                  {/* Floating Action Badge */}
-                  <div className="absolute bottom-6 right-6 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-rose-50 flex items-center gap-2 animate-bounce-slow">
-                    <span className="relative flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                    </span>
-                    <span className="text-xs font-bold text-text-dark">მარაგი იწურება!</span>
-                  </div>
                 </div>
+
+                {/* Floating brand-language chip — heart instead of generic alert */}
+                <motion.div
+                  initial={{ opacity: 0, y: 12, x: 12 }}
+                  animate={{ opacity: 1, y: 0, x: 0 }}
+                  transition={{ duration: 0.7, delay: 0.95, ease: [0.2, 0.8, 0.2, 1] }}
+                  className="absolute -bottom-4 -left-4 sm:bottom-6 sm:-left-6 z-10 inline-flex items-center gap-2 bg-bg-light pl-3 pr-4 py-2.5 rounded-full shadow-xl border border-rose-100"
+                >
+                  <span className="w-7 h-7 rounded-full bg-primary text-bg-light flex items-center justify-center">
+                    <Heart size={13} className="fill-current" />
+                  </span>
+                  <span className="text-xs sm:text-[13px] font-semibold text-text-dark">
+                    84 გვერდი სიყვარული
+                  </span>
+                </motion.div>
               </div>
             </motion.div>
           </div>
         </section>
 
-        {/* SECTION 1: IDEAL FOR (PREMIUM 3D CARDS) */}
-        <section className="relative z-10 max-w-7xl mx-auto space-y-40 px-6 mt-12 mb-32">
-          <div className="text-center mb-20 space-y-6">
-            <motion.div
-              initial={{ scale: 0 }}
-              whileInView={{ scale: 1 }}
+        {/* IDEAL FOR — asymmetric editorial grid (1 featured + 3 secondary) */}
+        <section className="relative z-10 max-w-6xl mx-auto px-6 mt-12 mb-32 sm:mb-40">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10 items-end mb-12 sm:mb-16">
+            <div className="lg:col-span-2 space-y-5">
+              <motion.span
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-50 border border-rose-100 text-primary font-semibold text-[13px]"
+              >
+                <Heart size={13} className="fill-current" /> ემოცია ყველასთვის
+              </motion.span>
+              <motion.h2
+                initial={{ opacity: 0, y: 14 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }}
+                className="font-serif text-text-dark text-4xl sm:text-6xl lg:text-7xl leading-[0.95] tracking-[-0.015em]"
+              >
+                ვისთვის არის <span className="italic text-primary">იდეალური</span>
+              </motion.h2>
+            </div>
+            <motion.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
-              transition={{ type: "spring", stiffness: 200 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-rose-50 border border-rose-100 shadow-sm text-primary font-bold text-sm"
+              transition={{ delay: 0.2 }}
+              className="text-text-mutted font-light leading-relaxed lg:pb-2 max-w-sm lg:ml-auto"
             >
-              <Heart size={16} className="fill-current animate-pulse" /> ემოცია ყველასთვის
-            </motion.div>
-            <h2 className="text-4xl md:text-6xl font-serif text-text-dark leading-tight">
-              ვისთვის არის <br /><span className="text-primary italic">იდეალური?</span>
-            </h2>
+              ოთხი ისტორია, ერთი წიგნი. აირჩიე ის, ვინც გულში გყავს.
+            </motion.p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {idealForData.map((item, idx) => (
+          {/* 6-tile mosaic: featured (2×2) + 5 secondary filling the remaining cells */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 auto-rows-[16rem] sm:auto-rows-[14rem] lg:auto-rows-[15rem]">
+            {/* Featured */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.9, ease: [0.2, 0.8, 0.2, 1] }}
+              className="relative sm:col-span-2 lg:col-span-2 lg:row-span-2 rounded-[2.5rem] overflow-hidden group cursor-pointer shadow-[0_30px_70px_-25px_rgba(138,31,59,0.35)]"
+            >
+              <Image
+                src={idealForData[0].image}
+                alt={idealForData[0].title}
+                fill
+                sizes="(min-width: 1024px) 64vw, 100vw"
+                className="object-cover transition-transform duration-[1200ms] group-hover:scale-[1.06]"
+              />
+              <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-text-dark/85 via-text-dark/40 to-transparent" />
+              <div className="absolute inset-0 p-7 sm:p-10 lg:p-12 flex flex-col justify-end text-bg-light">
+                <span className="inline-flex w-fit items-center gap-1.5 px-3 py-1 rounded-full bg-bg-light/15 backdrop-blur-sm border border-bg-light/25 text-[11px] font-semibold uppercase tracking-[0.18em] mb-5">
+                  <Heart size={11} className="fill-current text-rose-200" />
+                  {idealForData[0].tag}
+                </span>
+                <h3 className="font-serif text-3xl sm:text-4xl lg:text-5xl mb-4 leading-[1.05] drop-shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
+                  {idealForData[0].title}
+                </h3>
+                <p className="text-bg-light/90 font-light leading-relaxed max-w-md text-sm sm:text-base">
+                  {idealForData[0].desc}
+                </p>
+              </div>
+            </motion.div>
+
+            {/* 5 secondary tiles */}
+            {idealForData.slice(1).map((item, idx) => (
               <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 50 }}
+                key={item.title}
+                initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
-                transition={{ delay: idx * 0.15, duration: 0.8, type: "spring" }}
+                transition={{ duration: 0.8, delay: idx * 0.1, ease: [0.2, 0.8, 0.2, 1] }}
+                className="relative rounded-[2rem] overflow-hidden group cursor-pointer shadow-[0_18px_40px_-20px_rgba(138,31,59,0.28)] border border-rose-100"
               >
-                <TiltCard className="h-[450px] rounded-[2.5rem] overflow-hidden group cursor-pointer shadow-xl hover:shadow-2xl hover:shadow-primary/20 transition-all">
-                  <div className="absolute inset-0 z-0">
-                    <Image
-                      src={item.image}
-                      alt={item.title}
-                      fill
-                      className="object-cover transition-transform duration-1000 group-hover:scale-125"
-                    />
+                <Image
+                  src={item.image}
+                  alt={item.title}
+                  fill
+                  sizes="(min-width: 1024px) 32vw, (min-width: 640px) 50vw, 100vw"
+                  className="object-cover transition-transform duration-[1000ms] group-hover:scale-110"
+                />
+                <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-text-dark/90 via-text-dark/30 to-transparent" />
+                <div className="absolute inset-0 p-5 sm:p-6 flex flex-col justify-between text-bg-light">
+                  <span className="self-start inline-flex items-center px-2.5 py-1 rounded-full bg-bg-light/15 backdrop-blur-sm border border-bg-light/25 text-[10px] font-semibold uppercase tracking-[0.18em]">
+                    {item.tag}
+                  </span>
+                  <div>
+                    <h3 className="font-serif text-xl sm:text-2xl leading-tight mb-1.5 drop-shadow-[0_3px_10px_rgba(0,0,0,0.5)]">
+                      {item.title}
+                    </h3>
+                    <p className="text-bg-light/85 text-[13px] font-light leading-snug line-clamp-2 max-w-[22rem]">
+                      {item.desc}
+                    </p>
                   </div>
-                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent z-10 transition-opacity duration-500 group-hover:opacity-0" />
-                  <div className={`absolute inset-0 bg-gradient-to-t ${item.gradient} opacity-0 group-hover:opacity-90 transition-opacity duration-500 z-10`} />
-                  <div className="absolute inset-0 rounded-[2.5rem] border-2 border-white/0 group-hover:border-white/40 transition-colors duration-500 z-30 pointer-events-none" />
-                  <div className="absolute inset-0 p-8 flex flex-col justify-end z-20 text-white transform transition-transform duration-500">
-                    <motion.div className="translate-y-8 group-hover:translate-y-0 transition-all duration-500">
-                      <h3 className="text-2xl font-serif font-bold mb-3 drop-shadow-md">{item.title}</h3>
-                      <p className="opacity-0 group-hover:opacity-100 transition-all duration-500 delay-100 font-medium text-sm leading-relaxed text-white/95">
-                        {item.desc}
-                      </p>
-                      <div className="mt-5 w-10 h-1 bg-white/50 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-500 delay-200 transform origin-left group-hover:scale-x-150" />
-                    </motion.div>
-                  </div>
-                </TiltCard>
+                </div>
               </motion.div>
             ))}
           </div>
         </section>
 
-        {/* AI Comic Generator Teaser */}
-        <section className="relative z-10 max-w-6xl mx-auto px-6 mb-32">
+        {/* AI Comic Generator Teaser — dark warm callout, refined */}
+        <section className="relative z-10 max-w-6xl mx-auto px-6 mb-32 sm:mb-40">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="relative rounded-[2.5rem] overflow-hidden bg-gradient-to-br from-text-dark via-text-dark to-primary/40 text-white p-8 md:p-12 shadow-2xl"
+            transition={{ duration: 0.7, ease: [0.2, 0.8, 0.2, 1] }}
+            className="relative rounded-[2.5rem] overflow-hidden bg-text-dark text-bg-light p-8 sm:p-12 lg:p-16 shadow-[0_40px_80px_-30px_rgba(40,8,15,0.55)]"
           >
-            <div className="absolute inset-0 bg-gradient-to-tr from-primary/30 to-transparent pointer-events-none" />
-            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-              <div className="space-y-5">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 rounded-full text-rose-200 font-medium text-xs border border-white/20 backdrop-blur-sm">
-                  <Sparkles size={12} /> ახალი — AI გენერატორი
+            {/* Warm burgundy wash from the right */}
+            <div
+              aria-hidden
+              className="absolute inset-0 -z-0 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(80% 100% at 95% 50%, oklch(45% 0.14 22 / 0.45) 0%, transparent 60%)",
+              }}
+            />
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[1.05fr_1fr] gap-10 lg:gap-14 items-center">
+              <div>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-bg-light/10 rounded-full text-rose-200 font-semibold text-[11px] uppercase tracking-[0.18em] border border-bg-light/20">
+                  <Sparkles size={12} /> ახალი · AI გენერატორი
                 </span>
-                <h2 className="text-3xl md:text-5xl font-serif leading-tight">
-                  შენი ისტორია — <br />
-                  <span className="italic text-rose-200">პერსონალური კომიქსი</span>
+                <h2 className="font-serif leading-[0.95] tracking-[-0.015em] mt-5">
+                  <span className="block text-4xl sm:text-5xl lg:text-[4.5rem]">
+                    შენი ისტორია,
+                  </span>
+                  <span className="block mt-2 text-2xl sm:text-3xl lg:text-4xl italic text-rose-200 font-light">
+                    პერსონალური კომიქსი
+                  </span>
                 </h2>
-                <p className="text-gray-300 leading-relaxed">
-                  გვიამბე ისტორია, ატვირთე ფოტოები, აირჩიე სტილი. AI შენთვის შექმნის უნიკალურ კომიქსს,
-                  რომელსაც ციფრულად ჩამოტვირთავ ან დაბეჭდილს მიიღებ.
+                <p className="text-bg-light/75 leading-relaxed mt-6 max-w-md font-light">
+                  გვიამბე ისტორია, ატვირთე ფოტოები, აირჩიე სტილი. AI შენთვის შექმნის უნიკალურ კომიქსს, რომელსაც ციფრულად ჩამოტვირთავ ან დაბეჭდილს მიიღებ.
                 </p>
                 <Link
                   href="/comic"
-                  className="inline-flex items-center gap-2 bg-white text-text-dark px-7 py-3.5 rounded-full font-medium hover:bg-rose-50 hover:scale-105 transition-all shadow-lg"
+                  className="group inline-flex items-center gap-3 bg-bg-light text-text-dark px-7 py-4 rounded-full font-semibold hover:bg-primary hover:text-bg-light transition-all duration-400 shadow-[0_0_40px_rgba(255,255,255,0.18)] mt-8"
                 >
-                  გენერირება <Sparkles size={18} className="text-primary" />
+                  გენერირება დაიწყე
+                  <Sparkles
+                    size={18}
+                    className="text-primary group-hover:text-bg-light group-hover:rotate-12 transition-all"
+                  />
                 </Link>
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div
-                    key={i}
-                    className="aspect-[3/4] rounded-2xl bg-white/10 border border-white/10 backdrop-blur-sm flex items-center justify-center text-white/30 text-xs"
-                  >
-                    {i}
-                  </div>
-                ))}
+
+              {/* Staggered comic-style mosaic — real samples from the generator */}
+              <div className="relative">
+                <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                  {[
+                    { src: "/comic-styles/romantic-watercolor.png", label: "Watercolor", offset: "translate-y-0" },
+                    { src: "/comic-styles/ghibli-esque.png", label: "Ghibli", offset: "translate-y-5 sm:translate-y-8" },
+                    { src: "/comic-styles/manga-bw.png", label: "Manga", offset: "translate-y-2 sm:translate-y-3" },
+                    { src: "/comic-styles/classic-comic.png", label: "Classic", offset: "translate-y-4 sm:translate-y-6" },
+                    { src: "/comic-styles/storybook.png", label: "Storybook", offset: "translate-y-0" },
+                    { src: "/comic-styles/minimalist-flat.png", label: "Flat", offset: "translate-y-6 sm:translate-y-10" },
+                  ].map((tile, i) => (
+                    <motion.div
+                      key={tile.src}
+                      initial={{ opacity: 0, y: 18 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: i * 0.08, duration: 0.65, ease: [0.2, 0.8, 0.2, 1] }}
+                      className={`relative aspect-[3/4] rounded-2xl overflow-hidden border border-bg-light/15 group ${tile.offset}`}
+                    >
+                      <Image
+                        src={tile.src}
+                        alt={`${tile.label} comic style sample`}
+                        fill
+                        sizes="(min-width: 1024px) 16vw, 30vw"
+                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-text-dark/55 via-transparent to-transparent opacity-90 group-hover:opacity-60 transition-opacity duration-400" />
+                      <div className="absolute inset-x-0 bottom-2 text-center text-bg-light/85 text-[10px] font-mono uppercase tracking-[0.18em] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+                        {tile.label}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+                <div
+                  aria-hidden
+                  className="absolute -inset-6 -z-10 rounded-full"
+                  style={{
+                    background:
+                      "radial-gradient(closest-side, oklch(70% 0.15 25 / 0.22), transparent 70%)",
+                    filter: "blur(40px)",
+                  }}
+                />
               </div>
             </div>
           </motion.div>
         </section>
 
-        {/* SECTION 2: HOW IT WORKS (DYNAMIC PATH ANIMATION) */}
-        <section className="relative py-24 my-20">
-          <div className="absolute inset-0 bg-white/40 backdrop-blur-xl border-y border-white shadow-[0_8px_32px_rgba(0,0,0,0.04)] z-0"></div>
-          <div className="relative z-10 max-w-5xl mx-auto px-6 py-16">
-            <div className="text-center mb-24 space-y-4">
-              <h2 className="text-4xl md:text-5xl font-serif text-text-dark">როგორ მუშაობს</h2>
-              <p className="text-text-mutted text-lg font-light">სამი მარტივი ნაბიჯი დაუვიწყარი ემოციისკენ</p>
+        {/* HOW IT WORKS — three-step horizontal flow with watermark numerals & connecting ribbon */}
+        <section className="relative bg-white border-y border-rose-100 py-24 sm:py-32 overflow-hidden">
+          {/* Warm bloom behind the section */}
+          <div
+            aria-hidden
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1100px] h-[420px] rounded-full pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(closest-side, oklch(92% 0.05 30 / 0.55), transparent 70%)",
+              filter: "blur(50px)",
+            }}
+          />
+
+          <div className="relative max-w-6xl mx-auto px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10 items-end mb-20 sm:mb-28">
+              <div className="lg:col-span-2 space-y-5">
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-50 border border-rose-100 text-primary font-semibold text-[13px]"
+                >
+                  <Sparkles size={13} /> სამი ნაბიჯი
+                </motion.span>
+                <motion.h2
+                  initial={{ opacity: 0, y: 14 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }}
+                  className="font-serif text-text-dark text-4xl sm:text-6xl lg:text-7xl leading-[0.95] tracking-[-0.015em]"
+                >
+                  როგორ <span className="italic text-primary">მუშაობს</span>
+                </motion.h2>
+              </div>
+              <motion.p
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                className="text-text-mutted font-light leading-relaxed lg:pb-2 max-w-sm lg:ml-auto"
+              >
+                სამი ნაბიჯი დაუვიწყარი ემოციისკენ. ერთი საღამოს საქმე.
+              </motion.p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-16 relative">
-              <div className="hidden md:block absolute top-[40px] left-[15%] right-[15%] h-[2px] bg-rose-100 z-0 overflow-hidden">
-                <motion.div
-                  initial={{ x: "-100%" }}
-                  whileInView={{ x: "100%" }}
-                  viewport={{ once: false }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                  className="w-full h-full bg-gradient-to-r from-transparent via-primary to-transparent"
+            <div className="relative">
+              {/* Desktop connecting ribbon — a hand-drawn dashed curve threading the three steps */}
+              <svg
+                aria-hidden
+                viewBox="0 0 1000 100"
+                preserveAspectRatio="none"
+                className="hidden lg:block absolute inset-x-0 top-[60px] h-24 w-full pointer-events-none z-0"
+              >
+                <defs>
+                  <linearGradient id="howRibbon" x1="0" x2="1" y1="0" y2="0">
+                    <stop offset="0%" stopColor="#8a1f3b" stopOpacity="0.05" />
+                    <stop offset="25%" stopColor="#8a1f3b" stopOpacity="0.55" />
+                    <stop offset="75%" stopColor="#8a1f3b" stopOpacity="0.55" />
+                    <stop offset="100%" stopColor="#8a1f3b" stopOpacity="0.05" />
+                  </linearGradient>
+                </defs>
+                <motion.path
+                  d="M 60 60 C 220 10, 320 90, 500 50 S 780 10, 940 60"
+                  stroke="url(#howRibbon)"
+                  strokeWidth="1.5"
+                  strokeDasharray="7 8"
+                  strokeLinecap="round"
+                  fill="none"
+                  initial={{ pathLength: 0 }}
+                  whileInView={{ pathLength: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 2.4, ease: [0.2, 0.8, 0.2, 1] }}
                 />
+              </svg>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-14 md:gap-8 relative z-10">
+                {[
+                  {
+                    Icon: BookOpen,
+                    title: "აირჩიე წიგნი",
+                    desc: "შეარჩიე საუკეთესო სასაჩუქრე წიგნი, რომელიც ინახავს შენს სიტყვებს.",
+                    note: "1 წუთი",
+                  },
+                  {
+                    Icon: Sparkles,
+                    title: "ჩვენ ვამზადებთ",
+                    desc: "ვამზადებთ და ვფუთავთ საჩუქარს განსაკუთრებული სიყვარულითა და ესთეტიკით.",
+                    note: "1-2 დღე",
+                  },
+                  {
+                    Icon: Heart,
+                    title: "აჩუქე ემოცია",
+                    desc: "შეავსე ფურცლები შენი გრძნობებით და უყურე მის ბედნიერ რეაქციას.",
+                    note: "სამუდამოდ",
+                  },
+                ].map(({ Icon, title, desc, note }, idx) => (
+                  <motion.div
+                    key={title}
+                    initial={{ opacity: 0, y: 24 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-50px" }}
+                    transition={{ duration: 0.8, delay: idx * 0.18, ease: [0.2, 0.8, 0.2, 1] }}
+                    className="relative text-center md:text-left"
+                  >
+                    {/* Watermark numeral behind the content */}
+                    <span
+                      aria-hidden
+                      className="absolute -top-6 sm:-top-8 left-1/2 md:left-0 -translate-x-1/2 md:translate-x-0 font-serif font-bold text-[10rem] sm:text-[12rem] leading-none text-primary/8 tracking-[-0.04em] tabular-nums select-none pointer-events-none"
+                    >
+                      0{idx + 1}
+                    </span>
+
+                    <div className="relative pt-10 sm:pt-14 md:pt-16">
+                      {/* Icon medallion (sits above the connecting ribbon at y≈60px) */}
+                      <div className="relative inline-flex items-center justify-center w-[72px] h-[72px] rounded-full bg-bg-light text-primary border border-rose-100 shadow-[0_18px_36px_-18px_rgba(138,31,59,0.45)] mb-7">
+                        <Icon size={26} strokeWidth={1.5} />
+                        <span
+                          aria-hidden
+                          className="absolute -bottom-2 right-0 inline-flex items-center justify-center w-7 h-7 rounded-full bg-primary text-bg-light font-mono text-[11px] font-semibold shadow-[0_4px_12px_-3px_rgba(138,31,59,0.6)]"
+                        >
+                          {idx + 1}
+                        </span>
+                      </div>
+
+                      <h3 className="font-serif text-2xl sm:text-3xl text-text-dark leading-tight mb-3">
+                        {title}
+                      </h3>
+                      <p className="text-text-mutted font-light leading-relaxed text-[15px] max-w-sm md:max-w-none mx-auto md:mx-0">
+                        {desc}
+                      </p>
+
+                      <span className="mt-5 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] font-semibold text-primary/80">
+                        <span aria-hidden className="w-6 h-px bg-primary/40" />
+                        {note}
+                      </span>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
-
-              <motion.div whileHover={{ y: -10 }} className="relative z-10 flex flex-col items-center text-center group">
-                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-text-dark shadow-xl border border-rose-100 mb-8 relative">
-                  <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl group-hover:bg-primary/40 transition-colors opacity-0 group-hover:opacity-100" />
-                  <BookOpen size={30} className="text-primary relative z-10 group-hover:scale-110 transition-transform" />
-                </div>
-                <h3 className="text-xl font-bold text-text-dark mb-4 group-hover:text-primary transition-colors">1. აირჩიე წიგნი</h3>
-                <p className="text-text-mutted font-light leading-relaxed">
-                  შეარჩიე საუკეთესო სასაჩუქრე წიგნი, რომელიც ინახავს შენს სიტყვებს.
-                </p>
-              </motion.div>
-
-              <motion.div whileHover={{ y: -10 }} className="relative z-10 flex flex-col items-center text-center group">
-                <div className="w-20 h-20 bg-gradient-to-br from-primary to-rose-600 rounded-full flex items-center justify-center text-white shadow-[0_0_30px_rgba(2fb,113,133,0.4)] mb-8 relative">
-                  <div className="absolute -inset-2 rounded-full border border-primary/30 animate-[spin_4s_linear_infinite]" />
-                  <Sparkles size={30} className="relative z-10 group-hover:rotate-12 transition-transform" />
-                </div>
-                <h3 className="text-xl font-bold text-text-dark mb-4 group-hover:text-primary transition-colors">2. ჩვენ ვამზადებთ</h3>
-                <p className="text-text-mutted font-light leading-relaxed">
-                  ჩვენ ვამზადებთ და ვფუთავთ საჩუქარს განსაკუთრებული სიყვარულით და ესთეტიკით.
-                </p>
-              </motion.div>
-
-              <motion.div whileHover={{ y: -10 }} className="relative z-10 flex flex-col items-center text-center group">
-                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-text-dark shadow-xl border border-rose-100 mb-8 relative">
-                  <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl group-hover:bg-primary/40 transition-colors opacity-0 group-hover:opacity-100" />
-                  <Heart size={30} className="text-primary relative z-10 group-hover:scale-110 transition-transform" />
-                </div>
-                <h3 className="text-xl font-bold text-text-dark mb-4 group-hover:text-primary transition-colors">3. აჩუქე ემოცია</h3>
-                <p className="text-text-mutted font-light leading-relaxed">
-                  შეავსე ფურცლები შენი გრძნობებით და უყურე მათ ბედნიერ რეაქციას.
-                </p>
-              </motion.div>
             </div>
           </div>
         </section>
@@ -428,133 +672,318 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Value Proposition & Informational Section */}
-        <section id="info" className="py-24 px-6 bg-white border-y border-rose-50">
-          <div className="max-w-5xl mx-auto text-center space-y-16">
-            <div className="space-y-4">
-              <p className="text-primary font-medium tracking-widest text-sm uppercase">რატომ ეს წიგნი?</p>
-              <h2 className="text-3xl md:text-5xl font-serif text-text-dark leading-tight">
-                არ არის უბრალოდ ნივთი, <br />ეს საუკეთესო <span className="text-primary italic">ემოციაა</span>
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-left">
-              <div className="bg-rose-50/30 p-8 rounded-3xl border border-rose-50 hover:shadow-md transition-shadow">
-                <div className="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary mb-6">
-                  <BookHeart size={28} />
-                </div>
-                <h3 className="text-xl font-serif font-bold mb-3">მხოლოდ თქვენი ისტორია</h3>
-                <p className="text-text-mutted text-sm leading-relaxed">წიგნის 84-ვე გვერდს ავსებთ თქვენი სიტყვებით, მოგონებებითა და გრძნობებით, რაც საჩუქარს 100%-ით უნიკალურს ხდის.</p>
-              </div>
-
-              <div className="bg-amber-50/30 p-8 rounded-3xl border border-amber-50 hover:shadow-md transition-shadow">
-                <div className="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center text-accent mb-6">
-                  <Heart size={28} />
-                </div>
-                <h3 className="text-xl font-serif font-bold mb-3">დროში გაყინული გრძნობა</h3>
-                <p className="text-text-mutted text-sm leading-relaxed">განსხვავებით ჩვეულებრივი საჩუქრებისგან, თქვენი სიტყვები სამუდამოდ რჩება და ყოველ გადაშლაზე თავიდან აცოცხლებს ემოციას.</p>
-              </div>
-
-              <div className="bg-rose-50/30 p-8 rounded-3xl border border-rose-50 hover:shadow-md transition-shadow">
-                <div className="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center text-primary mb-6">
-                  <CheckCircle size={28} />
-                </div>
-                <h3 className="text-xl font-serif font-bold mb-3">დაუვიწყარი რეაქცია</h3>
-                <p className="text-text-mutted text-sm leading-relaxed">ამ საჩუქრის მიღებისას გაჩენილი ემოცია, სიხარულის ცრემლები და ბედნიერება ნამდვილად შეუფასებელია ნებისმიერი ადამიანისთვის.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Product Details Section */}
-        <section className="py-20 px-6 bg-white border-b border-rose-50">
-          <div className="max-w-4xl mx-auto space-y-12">
-            <div className="text-center space-y-4">
-              <h2 className="text-3xl md:text-4xl font-serif text-text-dark">წიგნის დეტალები</h2>
-              <p className="text-text-mutted text-lg font-light">შეიქმნა უმაღლესი ხარისხის მასალებით, რათა თქვენი მოგონებები დიდხანს შენახულიყო</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
-              <div className="flex items-start gap-4 p-6 rounded-2xl bg-rose-50/20 border border-rose-100">
-                <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-primary shrink-0">
-                  <BookOpen size={24} />
-                </div>
-                <div>
-                  <h4 className="font-bold text-text-dark text-lg mb-1">მოცულობა და ზომა</h4>
-                  <p className="text-text-mutted text-sm">84 გვერდი დასაწერად, ზომები: 15x20 სმ (A5 ფორმატზე ოდნავ პატარა, იდეალურია ხელში დასაჭერად 🌸)</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-6 rounded-2xl bg-rose-50/20 border border-rose-100">
-                <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-primary shrink-0">
-                  <Star size={24} />
-                </div>
-                <div>
-                  <h4 className="font-bold text-text-dark text-lg mb-1">პრემიუმ ხარისხი</h4>
-                  <p className="text-text-mutted text-sm">მყარი, ლამინირებული ყდა ოქროსფერი ანაბეჭდებით და გაზრდილი სისქის (120გ) ფურცლებით, რომელზეც მელანი არ გადადის.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Social Proof / Reviews Preview */}
-        <section className="py-24 px-6 bg-rose-50/20">
+        {/* VALUE PROPOSITION — 1 hero benefit + 2 secondary, asymmetric */}
+        <section id="info" className="py-24 sm:py-32 px-6">
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16 space-y-4">
-              <h2 className="text-3xl md:text-5xl font-serif text-text-dark">მყიდველები ამბობენ</h2>
-              <p className="text-text-mutted">ნახეთ, რას წერენ ისინი, ვინც უკვე აჩუქა სიყვარული</p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10 items-end mb-14 sm:mb-20">
+              <div className="lg:col-span-2 space-y-5">
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true }}
+                  className="text-primary font-semibold tracking-[0.32em] text-[11px] uppercase"
+                >
+                  რატომ ეს წიგნი
+                </motion.p>
+                <motion.h2
+                  initial={{ opacity: 0, y: 14 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }}
+                  className="font-serif text-text-dark text-4xl sm:text-6xl lg:text-7xl leading-[0.95] tracking-[-0.015em]"
+                >
+                  არ არის უბრალოდ ნივთი, <span className="italic text-primary">ეს ემოციაა</span>
+                </motion.h2>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {featuredReviews.map((review) => (
-                <div key={review.id} className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex flex-col">
-                  <div className="flex text-yellow-500 mb-4">
-                    {[...Array(review.rating)].map((_, i) => <Star key={i} size={16} className="fill-current" />)}
-                  </div>
-                  <p className="text-text-dark text-lg font-serif italic mb-6 flex-1">"{review.text}"</p>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                      {review.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm text-text-dark">{review.name}</p>
-                      <p className="text-xs text-text-mutted">{review.date}</p>
-                    </div>
-                  </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+              {/* Featured benefit */}
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }}
+                className="relative lg:row-span-2 rounded-[2.5rem] overflow-hidden bg-gradient-to-br from-primary to-rose-700 text-bg-light p-10 sm:p-14 lg:p-16 min-h-[420px] flex flex-col justify-between shadow-[0_30px_70px_-25px_rgba(138,31,59,0.45)]"
+              >
+                <div
+                  aria-hidden
+                  className="absolute -bottom-16 -right-16 w-72 h-72 rounded-full bg-bg-light/8 blur-3xl pointer-events-none"
+                />
+                <div
+                  aria-hidden
+                  className="absolute -top-10 -left-10 w-56 h-56 rounded-full bg-rose-300/15 blur-3xl pointer-events-none"
+                />
+                <div className="relative z-10">
+                  <BookHeart size={56} strokeWidth={1.5} className="mb-10 sm:mb-12" />
+                  <h3 className="font-serif text-3xl sm:text-4xl lg:text-5xl leading-[1.05] mb-5 sm:mb-6">
+                    მხოლოდ თქვენი <span className="italic">ისტორია</span>
+                  </h3>
+                  <p className="text-bg-light/85 text-base sm:text-lg leading-relaxed font-light max-w-md">
+                    წიგნის 84-ვე გვერდს ავსებთ თქვენი სიტყვებით, მოგონებებითა და გრძნობებით. რაც საჩუქარს უპირობოდ უნიკალურს ხდის.
+                  </p>
                 </div>
+                <span className="relative z-10 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.28em] font-semibold text-bg-light/70 mt-10">
+                  <span aria-hidden className="w-8 h-px bg-bg-light/40" />
+                  100% პერსონალური
+                </span>
+              </motion.div>
+
+              {/* Two secondary benefits stacked on the right */}
+              {[
+                {
+                  Icon: Heart,
+                  title: "დროში გაყინული გრძნობა",
+                  desc: "თქვენი სიტყვები სამუდამოდ რჩება. ყოველი გადაშლა აცოცხლებს ემოციას თავიდან.",
+                },
+                {
+                  Icon: CheckCircle,
+                  title: "დაუვიწყარი რეაქცია",
+                  desc: "სიხარულის ცრემლები და ბედნიერება, რომელიც არ ფასდება არცერთი საჩუქრით.",
+                },
+              ].map(({ Icon, title, desc }, idx) => (
+                <motion.div
+                  key={title}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.7, delay: 0.15 + idx * 0.1, ease: [0.2, 0.8, 0.2, 1] }}
+                  className="bg-bg-light rounded-[2rem] border border-rose-100 p-8 sm:p-10 shadow-[0_14px_36px_-22px_rgba(138,31,59,0.18)]"
+                >
+                  <Icon size={32} strokeWidth={1.5} className="text-primary mb-6" />
+                  <h3 className="font-serif text-2xl sm:text-3xl text-text-dark leading-tight mb-3">
+                    {title}
+                  </h3>
+                  <p className="text-text-mutted font-light leading-relaxed max-w-md">
+                    {desc}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* PRODUCT DETAILS — horizontal split with spec list, not a card grid */}
+        <section className="py-24 sm:py-32 px-6 bg-white border-y border-rose-100">
+          <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_1.1fr] gap-12 lg:gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.9, ease: [0.2, 0.8, 0.2, 1] }}
+              className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden border border-rose-100 shadow-[0_30px_60px_-25px_rgba(138,31,59,0.3)]"
+            >
+              <Image src="/hero.png" alt="წიგნის დეტალები" fill className="object-cover" />
+              <div className="absolute -inset-0 -z-10 bg-rose-50/40" />
+            </motion.div>
+
+            <div className="space-y-8">
+              <div className="space-y-4">
+                <p className="text-primary font-semibold tracking-[0.32em] text-[11px] uppercase">
+                  წიგნის დეტალები
+                </p>
+                <h2 className="font-serif text-text-dark text-4xl sm:text-5xl lg:text-6xl leading-[0.95] tracking-[-0.015em]">
+                  მზადდება <span className="italic text-primary">ხელით</span>
+                </h2>
+                <p className="text-text-mutted text-base sm:text-lg font-light leading-relaxed max-w-md">
+                  პრემიუმ მასალები, ხელნაკეთი შეფუთვა, თქვენი ისტორია. ისე, რომ ათეული წლის შემდეგაც ისე გამოიყურებოდეს, როგორც პირველ დღეს.
+                </p>
+              </div>
+
+              <dl className="border-t border-rose-100">
+                {[
+                  { label: "მოცულობა", value: "84 გვერდი დასაწერად" },
+                  { label: "ფორმატი", value: "15 × 20 სმ, ხელში დასაჭერად" },
+                  { label: "ფურცელი", value: "120გ პრემიუმი, მელანი არ გადადის" },
+                  { label: "ყდა", value: "მყარი, ლამინირებული, ოქროსფერი ანაბეჭდით" },
+                  { label: "შეფუთვა", value: "სასაჩუქრე ყუთი ლენტითა და ბარათით" },
+                ].map((d) => (
+                  <div
+                    key={d.label}
+                    className="grid grid-cols-[7rem_1fr] sm:grid-cols-[9rem_1fr] gap-6 py-4 border-b border-rose-100 last:border-0"
+                  >
+                    <dt className="text-[11px] uppercase tracking-[0.24em] font-semibold text-text-mutted self-baseline pt-1">
+                      {d.label}
+                    </dt>
+                    <dd className="text-text-dark text-sm sm:text-base leading-relaxed">
+                      {d.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </div>
+        </section>
+
+        {/* REVIEWS — 1 featured pull-quote + 2 supporting, editorial layout */}
+        <section className="py-24 sm:py-32 px-6 bg-rose-50/25">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-14 sm:mb-20 space-y-5">
+              <motion.p
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                className="text-primary font-semibold tracking-[0.32em] text-[11px] uppercase"
+              >
+                1000+ ბედნიერი წყვილი
+              </motion.p>
+              <motion.h2
+                initial={{ opacity: 0, y: 14 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }}
+                className="font-serif text-text-dark text-4xl sm:text-6xl lg:text-7xl leading-[0.95] tracking-[-0.015em]"
+              >
+                მყიდველები <span className="italic text-primary">ამბობენ</span>
+              </motion.h2>
+            </div>
+
+            {/* Featured pull-quote */}
+            <motion.blockquote
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.9, ease: [0.2, 0.8, 0.2, 1] }}
+              className="relative max-w-3xl mx-auto mb-12 sm:mb-16"
+            >
+              <span
+                aria-hidden
+                className="absolute -top-10 sm:-top-14 left-0 sm:-left-6 font-serif text-[9rem] sm:text-[12rem] leading-none text-primary/12 select-none pointer-events-none"
+              >
+                "
+              </span>
+              <div className="flex text-yellow-500 mb-6 justify-center">
+                {[...Array(featuredReviews[0].rating)].map((_, i) => (
+                  <Star key={i} size={20} className="fill-current" />
+                ))}
+              </div>
+              <p className="font-serif text-text-dark text-2xl sm:text-3xl lg:text-[2.25rem] italic leading-[1.4] text-center mb-8 px-2">
+                {featuredReviews[0].text}
+              </p>
+              <footer className="flex items-center justify-center gap-3 text-sm">
+                <span className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                  {featuredReviews[0].name.charAt(0)}
+                </span>
+                <span>
+                  <span className="block font-semibold text-text-dark">
+                    {featuredReviews[0].name}
+                  </span>
+                  <span className="block text-xs text-text-mutted">
+                    {featuredReviews[0].date}
+                  </span>
+                </span>
+              </footer>
+            </motion.blockquote>
+
+            {/* 2 supporting reviews */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 max-w-4xl mx-auto">
+              {featuredReviews.slice(1).map((review, idx) => (
+                <motion.div
+                  key={review.id}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.7, delay: 0.1 + idx * 0.1, ease: [0.2, 0.8, 0.2, 1] }}
+                  className="bg-bg-light p-7 sm:p-8 rounded-[1.75rem] border border-rose-100 flex flex-col shadow-[0_14px_36px_-22px_rgba(138,31,59,0.18)]"
+                >
+                  <div className="flex text-yellow-500 mb-4">
+                    {[...Array(review.rating)].map((_, i) => (
+                      <Star key={i} size={14} className="fill-current" />
+                    ))}
+                  </div>
+                  <p className="text-text-dark font-serif italic text-lg leading-relaxed mb-6 flex-1">
+                    {review.text}
+                  </p>
+                  <div className="flex items-center gap-3 pt-4 border-t border-rose-100">
+                    <span className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">
+                      {review.name.charAt(0)}
+                    </span>
+                    <span>
+                      <span className="block font-semibold text-sm text-text-dark">
+                        {review.name}
+                      </span>
+                      <span className="block text-[11px] text-text-mutted">{review.date}</span>
+                    </span>
+                  </div>
+                </motion.div>
               ))}
             </div>
 
-            <div className="mt-12 text-center">
-              <Link href="/shop/read-me" className="elegant-btn-outline inline-flex">
-                ნახეთ 1000+ შეფასება
+            <div className="mt-14 sm:mt-16 text-center">
+              <Link
+                href="/shop/read-me"
+                className="inline-flex items-center gap-1.5 text-sm text-primary font-medium underline underline-offset-[6px] decoration-primary/40 hover:decoration-primary"
+              >
+                ნახე 1000+ შეფასება <ChevronRight size={14} />
               </Link>
             </div>
           </div>
         </section>
 
-        {/* Final CTA */}
-        <section className="py-32 px-6 bg-text-dark rounded-t-[3rem] text-white relative overflow-hidden">
-          {/* Subtle gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent pointer-events-none"></div>
+        {/* FINAL CTA — confident, bigger, single button */}
+        <section className="py-32 sm:py-44 px-6 bg-text-dark rounded-t-[3rem] text-bg-light relative overflow-hidden">
+          {/* Warm burgundy glow centered behind the type */}
+          <div
+            aria-hidden
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[860px] h-[860px] rounded-full pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(closest-side, oklch(45% 0.14 22 / 0.4), transparent 70%)",
+              filter: "blur(40px)",
+            }}
+          />
 
-          <div className="max-w-3xl mx-auto text-center relative z-10 space-y-8">
-            <h2 className="text-4xl md:text-6xl font-serif leading-tight">
-              ნუ გადადებ სიყვარულის <br /><span className="italic text-rose-200">გამოხატვას</span>
-            </h2>
-            <p className="text-gray-300 text-lg md:text-xl font-light max-w-xl mx-auto">
-              შეუკვეთე დღესვე, დაწერე შენი გულწრფელი სიტყვები და აჩუქე ემოცია, რომელიც არასდროს დავიწყდება.
-            </p>
-            <div className="pt-8 flex flex-col items-center">
-              <Link href="/shop/read-me" className="inline-flex items-center justify-center gap-3 bg-white text-text-dark px-10 py-5 rounded-full text-xl font-medium hover:bg-rose-50 hover:scale-105 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)]">
-                შეიძინე ახლავე <Navigation size={20} className="text-primary rotate-45" />
+          <div className="max-w-3xl mx-auto text-center relative z-10 space-y-10">
+            <motion.h2
+              initial={{ opacity: 0, y: 18 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.9, ease: [0.2, 0.8, 0.2, 1] }}
+              className="font-serif leading-[0.95] tracking-[-0.015em]"
+            >
+              <span className="block text-5xl sm:text-7xl lg:text-[6.5rem] font-bold">
+                ნუ გადადებ
+              </span>
+              <motion.span
+                initial={{ opacity: 0, y: 14 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.7, delay: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+                className="block mt-3 sm:mt-4 text-3xl sm:text-5xl lg:text-[3.5rem] italic font-light text-rose-200"
+              >
+                სიყვარულის გამოხატვას
+              </motion.span>
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.45 }}
+              className="text-bg-light/65 text-base sm:text-lg lg:text-xl font-light max-w-xl mx-auto leading-relaxed"
+            >
+              შეუკვეთე დღესვე, დაწერე გულწრფელი სიტყვები. აჩუქე ემოცია, რომელიც არასდროს დავიწყდება.
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7, delay: 0.6 }}
+              className="pt-4 flex flex-col items-center gap-5"
+            >
+              <Link
+                href="/shop/read-me"
+                className="group inline-flex items-center justify-center gap-3 bg-bg-light text-text-dark pl-10 pr-7 py-5 sm:py-6 rounded-full text-lg sm:text-xl font-semibold hover:bg-primary hover:text-bg-light transition-all duration-400 shadow-[0_0_60px_rgba(255,255,255,0.22)]"
+              >
+                <span>შეიძინე 39 ₾</span>
+                <span className="flex items-center justify-center w-9 h-9 rounded-full bg-primary text-bg-light group-hover:bg-bg-light group-hover:text-primary transition-colors">
+                  <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+                </span>
               </Link>
-              <div className="mt-6 inline-flex items-center gap-2 text-sm text-white font-medium bg-white/10 px-5 py-2.5 rounded-full backdrop-blur-sm border border-white/20">
-                <Gift size={16} className="text-rose-300" />
-                <span><strong className="text-rose-300">მხოლოდ დღეს:</strong> უფასო სასაჩუქრე შეფუთვა</span>
-              </div>
-            </div>
+              <span className="inline-flex items-center gap-2 text-[13px] text-bg-light/75 bg-bg-light/8 px-4 py-2 rounded-full border border-bg-light/15">
+                <Gift size={14} className="text-rose-300" />
+                უფასო სასაჩუქრე შეფუთვა შეკვეთის ფარგლებში
+              </span>
+            </motion.div>
           </div>
         </section>
 

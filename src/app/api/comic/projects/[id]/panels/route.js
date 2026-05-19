@@ -25,14 +25,26 @@ export async function DELETE(_req, { params }) {
 
     const { data: project } = await supabase
         .from("comic_projects")
-        .select("id")
+        .select("id, user_id, status")
         .eq("id", id)
         .single();
     if (!project) return NextResponse.json({ error: "not found" }, { status: 404 });
+    if (project.user_id !== user.id) {
+        return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+
+    // Block delete-all while a generation run is in flight — otherwise the
+    // in-flight pipeline keeps writing into deleted rows and storage gets
+    // sprinkled with orphans.
+    if (project.status === "generating") {
+        return NextResponse.json(
+            { error: "generation in progress; wait until it finishes or fails" },
+            { status: 409 }
+        );
+    }
 
     const admin = getSupabaseAdmin();
 
-    // Collect storage paths so we can clean up the objects too
     const { data: existing } = await supabase
         .from("comic_panels")
         .select("image_path")
@@ -44,9 +56,11 @@ export async function DELETE(_req, { params }) {
     }
 
     await admin.from("comic_panels").delete().eq("project_id", id);
+    // Reset back to "styling" — the next /generate POST will atomically claim
+    // and re-enter "generating" state.
     await admin
         .from("comic_projects")
-        .update({ status: "generating" })
+        .update({ status: "styling" })
         .eq("id", id);
 
     return NextResponse.json({ ok: true });

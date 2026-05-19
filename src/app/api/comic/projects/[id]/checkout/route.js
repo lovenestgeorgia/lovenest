@@ -5,6 +5,18 @@ import { PRICES } from "@/lib/comic/pricing";
 
 export const runtime = "nodejs";
 
+// Limits on user-supplied shipping fields to prevent abuse / log bloat.
+const MAX_FIELD = 200;
+const clean = (s) =>
+    typeof s === "string" ? s.trim().slice(0, MAX_FIELD) : null;
+
+// Escape Telegram MarkdownV1 metacharacters so a customer name like
+// "*hack me*" can't break formatting or inject links.
+function tgEscape(s) {
+    if (!s) return "";
+    return String(s).replace(/[`*_[\]()~>#+=|{}.!\\-]/g, "\\$&");
+}
+
 export async function POST(req, { params }) {
     const { id } = await params;
     const supabase = await getSupabaseServer();
@@ -22,17 +34,50 @@ export async function POST(req, { params }) {
         return NextResponse.json({ error: "digital requires UniPay" }, { status: 400 });
     }
 
+    // Load project AND verify ownership explicitly. RLS already filters this for
+    // the user-scoped supabase client, but we read user_id so any later admin
+    // write can be guarded against IDOR.
     const { data: project } = await supabase
         .from("comic_projects")
-        .select("id, title")
+        .select("id, title, user_id, paid_digital, paid_print, status")
         .eq("id", id)
         .single();
     if (!project) return NextResponse.json({ error: "not found" }, { status: 404 });
+    if (project.user_id !== user.id) {
+        return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
+
+    // Print orders require the digital unlock first (must have generated the comic)
+    if (type === "print" && !project.paid_digital) {
+        return NextResponse.json(
+            { error: "digital unlock required before print order" },
+            { status: 400 }
+        );
+    }
+
+    // Don't double-pay for the same format
+    if (type === "digital" && project.paid_digital) {
+        return NextResponse.json({ error: "already paid" }, { status: 409 });
+    }
+    if (type === "print" && project.paid_print) {
+        return NextResponse.json({ error: "print already ordered" }, { status: 409 });
+    }
 
     const amount = PRICES[type];
     const admin = getSupabaseAdmin();
 
-    // Insert pending order via service role (RLS only grants SELECT to users)
+    // Normalize + cap user-supplied shipping fields
+    const shipping = {
+        name: clean(customer?.name),
+        phone: clean(customer?.phone),
+        city: clean(customer?.city),
+        address: clean(customer?.address),
+        email: clean(customer?.email),
+    };
+
+    // Insert pending order. COD is recorded as pending too — the order is only
+    // "paid" once fulfillment actually collects cash from the customer. The
+    // merchant manually flips it via admin tooling (or a future admin route).
     const { data: order, error: orderErr } = await admin
         .from("comic_orders")
         .insert({
@@ -41,31 +86,28 @@ export async function POST(req, { params }) {
             type,
             amount,
             payment_method: paymentMethod,
-            payment_status: paymentMethod === "cod" ? "paid" : "pending",
-            shipping_name: customer?.name || null,
-            shipping_phone: customer?.phone || null,
-            shipping_city: customer?.city || null,
-            shipping_address: customer?.address || null,
+            payment_status: "pending",
+            shipping_name: shipping.name,
+            shipping_phone: shipping.phone,
+            shipping_city: shipping.city,
+            shipping_address: shipping.address,
         })
         .select("id")
         .single();
 
     if (orderErr) return NextResponse.json({ error: orderErr.message }, { status: 500 });
 
-    // ---- COD print: mark project as paid_print immediately, notify ----
+    // ---- COD print: order is pending until the courier confirms payment ----
+    // We do NOT flip paid_print=true here. The order shows up in Telegram so
+    // the merchant can manually mark it shipped/paid.
     if (paymentMethod === "cod") {
-        await admin
-            .from("comic_projects")
-            .update({ paid_print: true, status: "paid" })
-            .eq("id", id);
-
         await notifyComicOrder({
             order,
             project,
             type,
             amount,
-            customer,
-            paymentStatus: "Success (Cash on Delivery)",
+            shipping,
+            paymentStatus: "Pending (Cash on Delivery)",
             user,
         });
 
@@ -90,15 +132,12 @@ export async function POST(req, { params }) {
     }
 
     const orderPayload = {
-        MerchantUser: customer?.email || user.email || "customer@lovenest.ge",
+        MerchantUser: shipping.email || user.email || "customer@lovenest.ge",
         MerchantOrderID: `COMIC-${order.id}`,
         OrderPrice: amount.toFixed(2),
         OrderCurrency: "GEL",
         OrderName: `Lovenest Comic — ${project.title}`,
-        // COMIC sentinel lets the dispatcher distinguish from the book product
         OrderDescription: `COMIC::${order.id}::${type}`,
-        // Digital purchase = the upfront 15 ₾ unlock → send them to the story step.
-        // Print purchase happens after generation → send them to /done to track shipping.
         SuccessRedirectUrl: Buffer.from(
             `${baseUrl}/comic/${id}/${type === "digital" ? "story" : "done"}`
         ).toString("base64"),
@@ -131,7 +170,6 @@ export async function POST(req, { params }) {
 
     console.log("[UniPay create-order response]", JSON.stringify(unipayData, null, 2));
 
-    // Surface UniPay-side errors (errorcode + message) so the customer sees the real reason
     if (unipayData?.errorcode || (unipayData?.message && !unipayData?.data)) {
         return NextResponse.json(
             {
@@ -149,18 +187,17 @@ export async function POST(req, { params }) {
         unipayData?.OrderHashID ||
         "";
 
+    // Write the UniPay hash BEFORE returning the redirect URL so the webhook
+    // has it available no matter how quickly UniPay calls back.
     await admin
         .from("comic_orders")
         .update({ unipay_order_id: String(orderHash) })
         .eq("id", order.id);
 
-    // Try every field name UniPay has ever used for the customer-facing redirect URL.
     const redirectUrl = pickRedirectUrl(unipayData) ||
-        // Fallback: construct from OrderHashID if UniPay only returned that
         (orderHash ? `https://apiv2.unipay.com/v3/checkout/${orderHash}` : null);
 
     if (!redirectUrl) {
-        // Return enough detail to debug from the browser network tab
         return NextResponse.json(
             {
                 error: "no redirect URL",
@@ -189,26 +226,36 @@ function pickRedirectUrl(d) {
     return candidates.find((u) => typeof u === "string" && u.startsWith("http")) || null;
 }
 
-async function notifyComicOrder({ order, project, type, amount, customer, paymentStatus, user }) {
+async function notifyComicOrder({ order, project, type, amount, shipping, paymentStatus, user }) {
     const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
     const CHAT = process.env.TELEGRAM_CHAT_ID;
     if (!TOKEN || !CHAT) return;
 
+    const safe = {
+        title: tgEscape(project.title),
+        email: tgEscape(user.email),
+        name: tgEscape(shipping?.name),
+        phone: tgEscape(shipping?.phone),
+        city: tgEscape(shipping?.city),
+        address: tgEscape(shipping?.address),
+        status: tgEscape(paymentStatus),
+    };
+
     const message =
-        `🎨 *ახალი კომიქსის შეკვეთა!*\n\n` +
+        `🎨 *ახალი კომიქსის შეკვეთა\\!*\n\n` +
         `📦 *შეკვეთის ID*: \`${order.id}\`\n` +
-        `🎭 *პროექტი*: ${project.title}\n` +
+        `🎭 *პროექტი*: ${safe.title}\n` +
         `📚 *ფორმატი*: ${type === "digital" ? "ციფრული PDF" : "ბეჭდური წიგნი"}\n` +
         `💰 *თანხა*: ${amount} ₾\n` +
-        `💳 *სტატუსი*: ${paymentStatus}\n\n` +
-        `👤 *მომხმარებელი*: ${user.email}\n` +
-        (customer?.name ? `📝 *სახელი*: ${customer.name}\n` : "") +
-        (customer?.phone ? `📞 *ტელ.*: ${customer.phone}\n` : "") +
-        (customer?.city ? `📍 *მის.*: ${customer.city}, ${customer.address || ""}\n` : "");
+        `💳 *სტატუსი*: ${safe.status}\n\n` +
+        `👤 *მომხმარებელი*: ${safe.email}\n` +
+        (safe.name ? `📝 *სახელი*: ${safe.name}\n` : "") +
+        (safe.phone ? `📞 *ტელ\\.*: ${safe.phone}\n` : "") +
+        (safe.city ? `📍 *მის\\.*: ${safe.city}, ${safe.address}\n` : "");
 
     await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: CHAT, text: message, parse_mode: "Markdown" }),
+        body: JSON.stringify({ chat_id: CHAT, text: message, parse_mode: "MarkdownV2" }),
     });
 }

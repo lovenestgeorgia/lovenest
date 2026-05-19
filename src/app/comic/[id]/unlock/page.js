@@ -3,13 +3,14 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { isDevUser } from "@/lib/comic/access";
 import { UnlockPaywall } from "@/components/comic/UnlockPaywall";
 import { PRICES, formatPrice } from "@/lib/comic/pricing";
-import { Sparkles, Download, MessageCircle, Palette, Wand2 } from "lucide-react";
+import { StudioSheet } from "@/components/comic/StudioChrome";
+import { MessageCircle, Wand2, Palette, Download } from "lucide-react";
 
 const FEATURES = [
-    { icon: MessageCircle, label: "AI ჩატით ისტორიის ამოღება" },
-    { icon: Wand2, label: "8-16 პერსონალური კადრის გენერაცია" },
-    { icon: Palette, label: "6 ვიზუალური სტილი" },
-    { icon: Download, label: "PDF ფორმატით ჩამოტვირთვა" },
+    { num: "01", icon: MessageCircle, label: "AI ჩატით ისტორიის ამოღება" },
+    { num: "02", icon: Wand2, label: "8-16 პერსონალური კადრის გენერაცია" },
+    { num: "03", icon: Palette, label: "6 ვიზუალური სტილი" },
+    { num: "04", icon: Download, label: "PDF ფორმატით ჩამოტვირთვა" },
 ];
 
 export default async function UnlockPage({ params }) {
@@ -25,44 +26,49 @@ export default async function UnlockPage({ params }) {
         .single();
     if (!project) notFound();
 
-    // Already paid OR dev/admin bypass — skip the paywall
     if (project.paid_digital || isDevUser(user)) {
         redirect(`/comic/${id}/story`);
     }
 
     return (
-        <div className="bg-white rounded-3xl border border-rose-100 shadow-sm p-8 md:p-12">
-            <div className="text-center space-y-3 mb-10">
-                <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-primary to-rose-600 flex items-center justify-center text-white shadow-lg">
-                    <Sparkles size={28} />
-                </div>
-                <h1 className="text-3xl md:text-4xl font-serif text-text-dark">
-                    გახსენი შენი კომიქსი
-                </h1>
-                <p className="text-text-mutted max-w-md mx-auto">
-                    ერთჯერადი {formatPrice(PRICES.digital)} გადახდის შემდეგ შეგიძლია შექმნა შენი უნიკალური კომიქსი
-                    AI-ით და ჩამოტვირთო PDF ფორმატით.
+        <StudioSheet className="p-8 sm:p-12">
+            <header className="text-center max-w-xl mx-auto mb-12">
+                <p className="text-[10px] uppercase tracking-[0.28em] text-text-mutted/70 font-mono mb-4">
+                    გახსნა · {formatPrice(PRICES.digital)}
                 </p>
-            </div>
+                <h1 className="font-serif text-4xl sm:text-5xl text-text-dark leading-[1.05] tracking-tight">
+                    გახსენი შენი <span className="italic text-primary">კომიქსი</span>
+                </h1>
+                <p className="text-text-mutted mt-4 leading-relaxed">
+                    ერთჯერადი {formatPrice(PRICES.digital)} გადახდის შემდეგ შეგიძლია შექმნა შენი
+                    უნიკალური კომიქსი AI-ით და ჩამოტვირთო PDF ფორმატით.
+                </p>
+            </header>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10 max-w-xl mx-auto">
-                {FEATURES.map(({ icon: Icon, label }) => (
-                    <div
-                        key={label}
-                        className="flex items-center gap-3 bg-rose-50/40 border border-rose-100 rounded-xl px-4 py-3"
+            {/* Feature list — number + icon + label, separated by hairlines */}
+            <ul className="max-w-md mx-auto mb-10 divide-y divide-rose-100/60 border-y border-rose-100/60">
+                {FEATURES.map(({ num, icon: Icon, label }) => (
+                    <li
+                        key={num}
+                        className="flex items-center gap-5 py-4 text-sm text-text-dark"
                     >
-                        <Icon size={18} className="text-primary shrink-0" />
-                        <span className="text-sm text-text-dark">{label}</span>
-                    </div>
+                        <span className="font-mono text-[11px] text-primary/70 tabular-nums shrink-0 w-5">
+                            {num}
+                        </span>
+                        <span className="w-9 h-9 rounded-full bg-rose-50 text-primary flex items-center justify-center shrink-0">
+                            <Icon size={16} />
+                        </span>
+                        <span>{label}</span>
+                    </li>
                 ))}
-            </div>
+            </ul>
 
             <div className="max-w-md mx-auto">
                 <UnlockPaywall projectId={id} userEmail={user.email} />
-                <p className="text-xs text-text-mutted text-center mt-4">
-                    ბეჭდური წიგნი ცალკე იყიდება გენერაციის შემდეგ — +{formatPrice(PRICES.print)}.
+                <p className="text-[11px] uppercase tracking-[0.22em] text-text-mutted/60 font-medium text-center mt-5">
+                    ბეჭდური წიგნი ცალკე — +{formatPrice(PRICES.print)}
                 </p>
             </div>
-        </div>
+        </StudioSheet>
     );
 }

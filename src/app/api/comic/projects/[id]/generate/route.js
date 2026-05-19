@@ -1,19 +1,50 @@
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
-import { getGemini, TEXT_MODEL, generateImage } from "@/lib/gemini";
+import { generateImage, generateTextWithFallback } from "@/lib/gemini";
+import { generatePanelArt, getArtProvider } from "@/lib/comic/imageProvider";
 import {
     PANEL_SCRIPT_SYSTEM_PROMPT,
     buildPanelImagePrompt,
     buildCharacterSheetPrompt,
+    buildTextOverlayPrompt,
 } from "@/lib/comic/prompts";
 import { getStyleById } from "@/lib/comic/styles";
-import { CHARACTER_BUCKET, PANEL_BUCKET, panelPath } from "@/lib/comic/storage";
+import { CHARACTER_BUCKET, PANEL_BUCKET, panelPath, characterSheetPath } from "@/lib/comic/storage";
+import { critiquePanel } from "@/lib/comic/critic";
+import { downloadAndNormalize } from "@/lib/comic/imageNormalize";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
 function sseEncode(obj) {
     return `data: ${JSON.stringify(obj)}\n\n`;
+}
+
+// Convert a critic verdict into a plain-English correction note for the
+// retry pass. Used as userComment in buildPanelImagePrompt — that prompt
+// treats the first attached image as the previous attempt and asks the
+// model to fix the listed issues.
+function buildCriticCorrection(critique) {
+    if (!critique) return "";
+    const visual = critique.visual_issues || [];
+    const text = (critique.text_check?.bubbles || [])
+        .filter((b) => b?.ok === false)
+        .map((b) => `speech bubble should say "${b.expected}" but was rendered as "${b.rendered}"`);
+    const captionFix =
+        critique.text_check?.caption && critique.text_check.caption.ok === false
+            ? [
+                  `caption should say "${critique.text_check.caption.expected}" but was rendered as "${critique.text_check.caption.rendered}"`,
+              ]
+            : [];
+    const suggestions = critique.suggestions || [];
+
+    const allFixes = [...visual, ...text, ...captionFix, ...suggestions]
+        .filter(Boolean)
+        .map((s) => s.replace(/\s+/g, " ").trim())
+        .filter((s) => s.length > 0);
+
+    if (allFixes.length === 0) return "";
+    return `Fix the following problems from the previous attempt: ${allFixes.join("; ")}.`;
 }
 
 export async function POST(_req, { params }) {
@@ -25,26 +56,57 @@ export async function POST(_req, { params }) {
     const admin = getSupabaseAdmin();
 
     const [{ data: project }, { data: characters }, { data: messages }, { data: existingPanels }] = await Promise.all([
-        supabase.from("comic_projects").select("*").eq("id", id).single(),
-        supabase
+        admin.from("comic_projects").select("*").eq("id", id).single(),
+        admin
             .from("comic_characters")
-            .select("name, description, persona, wardrobe, reference_image_path")
+            .select("id, name, description, persona, wardrobe, reference_image_path, character_sheet_path")
             .eq("project_id", id),
-        supabase
+        admin
             .from("comic_messages")
             .select("role, content")
             .eq("project_id", id)
             .order("created_at"),
-        supabase.from("comic_panels").select("id").eq("project_id", id),
+        admin.from("comic_panels").select("id").eq("project_id", id),
     ]);
 
     if (!project) return new Response("not found", { status: 404 });
     if (project.user_id !== user.id) return new Response("forbidden", { status: 403 });
 
     const style = getStyleById(project.style_id);
-    if (!style) return new Response("style not selected", { status: 400 });
+    if (!style) {
+        console.warn("[generate] no style selected", { id, style_id: project.style_id });
+        return new Response(
+            JSON.stringify({ error: "no_style", redirect: `/comic/${id}/style` }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+    }
 
-    if ((existingPanels || []).length > 0) {
+    if (!characters || characters.length === 0) {
+        console.warn("[generate] no characters found", {
+            id,
+            user_id: user.id,
+            project_user_id: project.user_id,
+            chars_len: (characters || []).length,
+        });
+        return new Response(
+            JSON.stringify({ error: "no_characters", redirect: `/comic/${id}/characters` }),
+            { status: 400, headers: { "Content-Type": "application/json" } }
+        );
+    }
+
+    // Atomic claim: only transition into "generating" from a non-generating state.
+    // If 0 rows matched, another request beat us to it OR the project is already
+    // in generating state — return a polling-style stream the client can latch onto.
+    const { data: claimed, error: claimErr } = await admin
+        .from("comic_projects")
+        .update({ status: "generating" })
+        .eq("id", id)
+        .neq("status", "generating")
+        .select("id")
+        .maybeSingle();
+
+    const alreadyRunning = !claimed && !claimErr;
+    if (alreadyRunning || (existingPanels || []).length > 0) {
         const encoder = new TextEncoder();
         return new Response(
             new ReadableStream({
@@ -79,10 +141,7 @@ export async function POST(_req, { params }) {
             };
 
             try {
-                await admin
-                    .from("comic_projects")
-                    .update({ status: "generating" })
-                    .eq("id", id);
+                // status is already "generating" from the atomic claim above
 
                 send({ type: "status", message: "სცენარის შედგენა..." });
 
@@ -100,13 +159,15 @@ export async function POST(_req, { params }) {
                     .filter(Boolean)
                     .join("\n\n");
 
-                const gemini = getGemini();
-                const scriptResult = await gemini.models.generateContent({
-                    model: TEXT_MODEL,
+                // Gemini 2.5 Pro REQUIRES thinking — it rejects budget=0.
+                // Cap it to 256 tokens so we get the speedup without paying
+                // for an exhaustive thinking pass.
+                const scriptResult = await generateTextWithFallback({
                     contents: [{ role: "user", parts: [{ text: storyContext }] }],
                     config: {
                         systemInstruction: PANEL_SCRIPT_SYSTEM_PROMPT,
                         responseMimeType: "application/json",
+                        thinkingConfig: { thinkingBudget: 256 },
                     },
                 });
 
@@ -135,6 +196,9 @@ export async function POST(_req, { params }) {
                         actions: Array.isArray(p.actions) ? p.actions : [],
                         scene_description: p.scene_description || p.scene_prompt || "",
                         location: typeof p.location === "string" ? p.location : "",
+                        camera: typeof p.camera === "string" ? p.camera : "",
+                        lighting: typeof p.lighting === "string" ? p.lighting : "",
+                        expressions: typeof p.expressions === "string" ? p.expressions : "",
                         dialogue: Array.isArray(p.dialogue) ? p.dialogue : [],
                         caption: p.caption || "",
                     };
@@ -208,43 +272,71 @@ export async function POST(_req, { params }) {
                 const refCache = new Map(); // name -> [{ base64, mimeType }, ...]
                 for (const c of characters || []) {
                     if (!c.reference_image_path) continue;
-                    try {
-                        const { data: blob } = await admin.storage
-                            .from(CHARACTER_BUCKET)
-                            .download(c.reference_image_path);
-                        if (!blob) continue;
-                        const buf = Buffer.from(await blob.arrayBuffer());
-                        refCache.set(c.name, [
-                            {
-                                base64: buf.toString("base64"),
-                                mimeType: blob.type || "image/png",
-                            },
-                        ]);
-                    } catch (e) {
-                        console.warn(`ref image fetch failed for ${c.name}:`, e.message);
-                    }
+                    // Normalize every uploaded photo to a clean PNG. Without
+                    // this, JPEG/HEIC/WebP refs make OpenAI's images.edit
+                    // return 400 "Invalid image file or mode".
+                    const norm = await downloadAndNormalize(
+                        admin,
+                        CHARACTER_BUCKET,
+                        c.reference_image_path
+                    );
+                    if (norm) refCache.set(c.name, [norm]);
                 }
 
-                // ===== 3b. Generate styled character sheets =====
+                // ===== 3b. Load cached sheets, or generate + persist new ones =====
                 send({ type: "status", message: "პერსონაჟების სტილიზაცია..." });
                 await Promise.all(
                     (characters || []).map(async (c) => {
                         const photoRef = refCache.get(c.name)?.[0];
                         if (!photoRef) return;
+
+                        // Fast path: previously generated sheet exists in storage
+                        if (c.character_sheet_path) {
+                            const norm = await downloadAndNormalize(
+                                admin,
+                                CHARACTER_BUCKET,
+                                c.character_sheet_path
+                            );
+                            if (norm) {
+                                refCache.set(c.name, [norm, photoRef]);
+                                return;
+                            }
+                        }
+
+                        // Slow path: generate fresh sheet and save for future runs
                         try {
                             const sheetPrompt = buildCharacterSheetPrompt({
                                 stylePrefix: style.promptPrefix,
                                 character: c,
                             });
-                            const { base64, mimeType } = await generateImage({
+                            // Character sheets run through the same provider
+                            // as panel art (controlled by IMAGE_PROVIDER env).
+                            const { base64 } = await generatePanelArt({
                                 prompt: sheetPrompt,
                                 referenceImages: [photoRef],
                                 aspectRatio: "1:1",
                             });
-                            // Prepend the sheet so it becomes the primary visual reference,
-                            // followed by the original photo for face/identity grounding.
+                            const sheetBytes = Buffer.from(base64, "base64");
+                            const path = characterSheetPath({
+                                userId: user.id,
+                                projectId: id,
+                                characterId: c.id,
+                            });
+                            await admin.storage
+                                .from(CHARACTER_BUCKET)
+                                .upload(path, sheetBytes, {
+                                    contentType: "image/png",
+                                    upsert: true,
+                                });
+                            await admin
+                                .from("comic_characters")
+                                .update({ character_sheet_path: path })
+                                .eq("id", c.id);
+
+                            // Sheet just came from the image API as PNG, no
+                            // re-encoding needed — but tag it correctly.
                             refCache.set(c.name, [
-                                { base64, mimeType: mimeType || "image/png" },
+                                { base64, mimeType: "image/png" },
                                 photoRef,
                             ]);
                         } catch (e) {
@@ -255,7 +347,15 @@ export async function POST(_req, { params }) {
                 );
 
                 // ===== 4. Generate images with bounded concurrency =====
-                const CONCURRENCY = 2;
+                // Default to 3 (small batches keep OpenAI happy and recover
+                // gracefully from network blips). Override via PANEL_CONCURRENCY
+                // — falls back to the legacy GEMINI_IMAGE_CONCURRENCY name.
+                const CONCURRENCY = Math.min(
+                    Number(process.env.PANEL_CONCURRENCY) ||
+                        Number(process.env.GEMINI_IMAGE_CONCURRENCY) ||
+                        3,
+                    panelRows.length
+                );
                 let cursor = 0;
 
                 async function generateOne(row, scriptIdx) {
@@ -272,38 +372,159 @@ export async function POST(_req, { params }) {
                     });
 
                     try {
-                        const prompt = buildPanelImagePrompt({
-                            stylePrefix: style.promptPrefix,
-                            coverTypography: style.coverTypography,
-                            pageType: row.page_type,
-                            title,
-                            subtitle,
-                            sceneDescription: scriptPanel.scene_description,
-                            location: scriptPanel.location,
-                            actions: scriptPanel.actions,
-                            dialogue: scriptPanel.dialogue,
-                            caption: scriptPanel.caption,
-                            charactersInScene: scriptPanel.characters_in_scene,
-                            characters: characters || [],
-                        });
-
-                        // Collect reference images for characters in this scene.
-                        // Each character contributes [styled sheet, original photo].
+                        // Collect character reference images once
                         let refImages = (scriptPanel.characters_in_scene || [])
                             .flatMap((name) => refCache.get(name) || []);
-
-                        // For the cover, pull in references for every character
                         if (refImages.length === 0 && row.page_type === "cover") {
                             refImages = Array.from(refCache.values()).flat();
                         }
 
-                        const { base64 } = await generateImage({
-                            prompt,
-                            referenceImages: refImages,
-                            aspectRatio: "2:3",
-                        });
+                        // Retry loop — if the critic flags the panel as
+                        // needs_redo (missing legs, mangled face, wrong text),
+                        // automatically regenerate using the critic feedback
+                        // as a correction prompt with the bad attempt as a ref.
+                        const MAX_PANEL_ATTEMPTS = 2;
+                        let base64;
+                        let artBase64 = null;
+                        let critique = null;
+                        let lastBadBase64 = null;
+
+                        for (let attempt = 0; attempt < MAX_PANEL_ATTEMPTS; attempt++) {
+                            const isRetry = attempt > 0 && lastBadBase64 && critique;
+                            const userComment = isRetry
+                                ? buildCriticCorrection(critique)
+                                : "";
+
+                            const prompt = buildPanelImagePrompt({
+                                stylePrefix: style.promptPrefix,
+                                coverTypography: style.coverTypography,
+                                pageType: row.page_type,
+                                title,
+                                subtitle,
+                                sceneDescription: scriptPanel.scene_description,
+                                location: scriptPanel.location,
+                                camera: scriptPanel.camera,
+                                lighting: scriptPanel.lighting,
+                                expressions: scriptPanel.expressions,
+                                actions: scriptPanel.actions,
+                                dialogue: scriptPanel.dialogue,
+                                caption: scriptPanel.caption,
+                                charactersInScene: scriptPanel.characters_in_scene,
+                                characters: characters || [],
+                                userComment,
+                            });
+
+                            // On retry, prepend the bad version as the first
+                            // reference image so the model treats this as an
+                            // edit-with-correction call.
+                            const refsForCall = isRetry
+                                ? [{ base64: lastBadBase64, mimeType: "image/png" }, ...refImages]
+                                : refImages;
+
+                            // ── PASS 1: text-free panel art (provider per IMAGE_PROVIDER env) ──
+                            send({
+                                type: "panel-stage",
+                                id: row.id,
+                                ord: row.ord,
+                                stage: "drawing",
+                                provider: getArtProvider(),
+                                attempt: attempt + 1,
+                            });
+                            const artResult = await generatePanelArt({
+                                prompt,
+                                referenceImages: refsForCall,
+                                aspectRatio: "2:3",
+                            });
+                            base64 = artResult.base64;
+                            artBase64 = artResult.base64;
+
+                            // ── PASS 2: Nano Banana Pro adds Georgian text on top ──
+                            // Only when this panel actually has dialogue / caption / title.
+                            const needsText =
+                                row.page_type === "cover" ||
+                                (Array.isArray(scriptPanel.dialogue) && scriptPanel.dialogue.length > 0) ||
+                                !!scriptPanel.caption;
+
+                            // Surface the text-free art to the client so the
+                            // user sees the first pass land before Nano Banana
+                            // adds Georgian text on top. Skipped when there's
+                            // no text to add (closing pages without dialogue).
+                            if (needsText) {
+                                send({
+                                    type: "panel-art",
+                                    id: row.id,
+                                    ord: row.ord,
+                                    image_data_url: `data:image/png;base64,${base64}`,
+                                    provider: "openai",
+                                });
+                            }
+                            if (needsText) {
+                                try {
+                                    send({
+                                        type: "panel-stage",
+                                        id: row.id,
+                                        ord: row.ord,
+                                        stage: "writing",
+                                        provider: "gemini",
+                                    });
+                                    const overlayPrompt = buildTextOverlayPrompt({
+                                        pageType: row.page_type,
+                                        dialogue: scriptPanel.dialogue,
+                                        caption: scriptPanel.caption,
+                                        title,
+                                        subtitle,
+                                        coverTypography: style.coverTypography,
+                                        stylePrefix: style.promptPrefix,
+                                    });
+                                    const overlayResult = await generateImage({
+                                        prompt: overlayPrompt,
+                                        referenceImages: [
+                                            { base64, mimeType: "image/png" },
+                                        ],
+                                        aspectRatio: "2:3",
+                                    });
+                                    base64 = overlayResult.base64;
+                                } catch (e) {
+                                    console.warn(
+                                        `[generate] text overlay failed for panel ${row.ord}, keeping bare art:`,
+                                        e.message
+                                    );
+                                }
+                            }
+
+                            // Critic pass
+                            critique = await critiquePanel({
+                                imageBase64: base64,
+                                mimeType: "image/png",
+                                pageType: row.page_type,
+                                dialogue: scriptPanel.dialogue,
+                                caption: scriptPanel.caption,
+                                title: row.page_type === "cover" ? title : "",
+                                characters: characters || [],
+                            });
+
+                            const needsRedo =
+                                critique &&
+                                (critique.overall === "needs_redo" ||
+                                    (critique.score || 10) <= 5);
+
+                            if (!needsRedo) {
+                                if (attempt > 0) {
+                                    console.log(
+                                        `[generate] panel ${row.ord} fixed on retry attempt=${attempt + 1}, score=${critique?.score}`
+                                    );
+                                }
+                                break;
+                            }
+
+                            console.log(
+                                `[generate] panel ${row.ord} attempt=${attempt + 1}/${MAX_PANEL_ATTEMPTS} flagged by critic (score=${critique?.score}), retrying`
+                            );
+                            lastBadBase64 = base64;
+                        }
 
                         const bytes = Buffer.from(base64, "base64");
+
                         const path = panelPath({
                             userId: user.id,
                             projectId: id,
@@ -317,6 +538,26 @@ export async function POST(_req, { params }) {
                             });
                         if (upErr) throw upErr;
 
+                        // Also persist the text-free art so future regenerates
+                        // that only need text fixes can re-overlay without
+                        // re-running OpenAI. Different path from the final.
+                        const artPath = path.replace(/\.png$/, ".art.png");
+                        if (artBase64 && artBase64 !== base64) {
+                            try {
+                                await admin.storage
+                                    .from(PANEL_BUCKET)
+                                    .upload(artPath, Buffer.from(artBase64, "base64"), {
+                                        contentType: "image/png",
+                                        upsert: true,
+                                    });
+                            } catch (e) {
+                                console.warn(
+                                    `[generate] art-only upload failed for panel ${row.ord}:`,
+                                    e.message
+                                );
+                            }
+                        }
+
                         const { data: signed } = await admin.storage
                             .from(PANEL_BUCKET)
                             .createSignedUrl(path, 60 * 60 * 24 * 30);
@@ -327,6 +568,7 @@ export async function POST(_req, { params }) {
                                 status: "ready",
                                 image_path: path,
                                 image_url: signed.signedUrl,
+                                critique,
                             })
                             .eq("id", row.id);
 
@@ -335,6 +577,7 @@ export async function POST(_req, { params }) {
                             id: row.id,
                             ord: row.ord,
                             image_url: signed.signedUrl,
+                            critique,
                         });
                     } catch (err) {
                         console.error("panel generation failed:", err);
@@ -369,9 +612,18 @@ export async function POST(_req, { params }) {
                 send({ type: "done" });
             } catch (err) {
                 console.error("generation pipeline error:", err);
+                // Reset status so the user can retry from /style or /generate.
+                // Without this, status stays "generating" forever and every
+                // subsequent /generate call sees "already running".
+                try {
+                    await admin
+                        .from("comic_projects")
+                        .update({ status: "styling" })
+                        .eq("id", id);
+                } catch {}
                 send({ type: "error", message: err.message });
             } finally {
-                controller.close();
+                try { controller.close(); } catch {}
             }
         },
     });

@@ -1,21 +1,22 @@
 import Link from "next/link";
-import Image from "next/image";
-import { Sparkles, BookHeart, Palette, Wand2, Download, Truck, Plus } from "lucide-react";
+import { Sparkles, Plus, ArrowRight, MessageCircle, Upload, Palette, Wand2 } from "lucide-react";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { COMIC_STYLES } from "@/lib/comic/styles";
 import { PRICES, formatPrice } from "@/lib/comic/pricing";
 import { NewProjectButton } from "@/components/comic/NewProjectButton";
+import { PaperGrain } from "@/components/comic/StudioChrome";
 
 export const metadata = {
     title: "AI კომიქსის გენერატორი | Lovenest",
-    description: "შეუთხრე შენი ისტორია, ჩვენ მას კომიქსად აქცევთ. AI-ით გენერირებული პერსონალური კომიქსი.",
+    description:
+        "შეუთხრე შენი ისტორია, ჩვენ მას კომიქსად აქცევთ. AI-ით გენერირებული პერსონალური კომიქსი.",
 };
 
 const STEPS = [
-    { icon: BookHeart, title: "გვიამბე შენი ისტორია", desc: "ჩვენი AI გკითხავს კითხვებს და დაგეხმარება დეტალების ამოღებაში." },
-    { icon: Sparkles, title: "ატვირთე ფოტოები", desc: "მონიშნე ვინ არის თითო ფოტოზე — გავარჩევთ და დავიმახსოვრებთ." },
-    { icon: Palette, title: "აირჩიე სტილი", desc: "6 სხვადასხვა ვიზუალური სტილიდან აირჩიე ისეთი, რომელიც გრძნობას უხდება." },
-    { icon: Wand2, title: "ჩვენ ვხატავთ", desc: "AI ხატავს თითო კადრს თქვენი პერსონაჟებით და სცენებით." },
+    { num: "01", icon: MessageCircle, title: "გვიამბე ისტორია", desc: "AI გკითხავს და დაგეხმარება დეტალების ამოღებაში." },
+    { num: "02", icon: Upload, title: "ატვირთე ფოტოები", desc: "მონიშნე ვინ არის თითო ფოტოზე — ჩვენ დავიმახსოვრებთ." },
+    { num: "03", icon: Palette, title: "აირჩიე სტილი", desc: "6 ვიზუალური სტილიდან აირჩიე ისეთი, რომელიც გრძნობას უხდება." },
+    { num: "04", icon: Wand2, title: "AI ხატავს", desc: "თითო კადრი იხატება შენი პერსონაჟებითა და სცენებით." },
 ];
 
 export default async function ComicLandingPage() {
@@ -33,148 +34,247 @@ export default async function ComicLandingPage() {
     }
 
     return (
-        <div className="font-sans bg-bg-light relative overflow-hidden min-h-screen">
-            <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-                <div className="absolute top-[-5%] right-[-5%] w-[500px] h-[500px] bg-rose-300/20 rounded-full blur-[100px]" />
-                <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-amber-200/20 rounded-full blur-[120px]" />
-            </div>
+        <div className="font-sans bg-bg-light relative min-h-screen overflow-hidden">
+            <PaperGrain className="fixed inset-0 z-0" />
 
-            <main className="relative z-10 pt-28 sm:pt-36 pb-24">
+            {/* Soft warmth blooms */}
+            <div
+                aria-hidden
+                className="fixed -top-24 right-[-15%] w-[640px] h-[640px] rounded-full pointer-events-none z-0"
+                style={{
+                    background:
+                        "radial-gradient(closest-side, oklch(70% 0.13 10 / 0.08), transparent 70%)",
+                }}
+            />
+            <div
+                aria-hidden
+                className="fixed bottom-[-20%] left-[-20%] w-[720px] h-[720px] rounded-full pointer-events-none z-0"
+                style={{
+                    background:
+                        "radial-gradient(closest-side, oklch(85% 0.08 70 / 0.10), transparent 70%)",
+                }}
+            />
+
+            <main className="relative z-10 pt-28 sm:pt-36 pb-32">
                 {/* Hero */}
-                <section className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                    <div className="space-y-6">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 rounded-full text-primary font-medium text-xs border border-rose-100">
-                            <Sparkles size={12} /> ახალი ფუნქცია
-                        </span>
-                        <h1 className="text-5xl md:text-6xl font-serif text-text-dark leading-[1.05]">
-                            შენი ისტორია — <span className="text-primary italic">კომიქსად</span>
+                <section className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-16 lg:gap-20 items-center">
+                    <div className="space-y-7">
+                        <p className="text-[11px] uppercase tracking-[0.28em] font-mono text-primary inline-flex items-center gap-2">
+                            <Sparkles size={11} /> ახალი — AI კომიქსი
+                        </p>
+                        <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl text-text-dark leading-[0.95] tracking-tight">
+                            შენი ისტორია —
+                            <br />
+                            <span className="italic text-primary">კომიქსად</span>
                         </h1>
-                        <p className="text-lg text-text-mutted leading-relaxed">
-                            გვიამბე ისტორია, ატვირთე ფოტოები ვინც მონაწილეობს, აირჩიე სტილი —
-                            AI შენთვის შექმნის უნიკალურ კომიქსს, რომელსაც ციფრულად ჩამოტვირთავ ან დაიბეჭდავ.
+                        <p className="text-lg text-text-mutted leading-relaxed max-w-lg">
+                            გვიამბე ისტორია. ატვირთე იმათი ფოტოები ვინც მონაწილეობს. აირჩიე სტილი.
+                            AI შენთვის შექმნის უნიკალურ კომიქსს — ციფრულად ან ბეჭდურად.
                         </p>
 
-                        <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex flex-col sm:flex-row gap-4 pt-2">
                             {user ? (
-                                <NewProjectButton className="elegant-btn text-lg group">
+                                <NewProjectButton className="elegant-btn text-lg group inline-flex items-center gap-2">
                                     <Plus size={20} /> ახალი კომიქსი
                                 </NewProjectButton>
                             ) : (
-                                <Link href="/auth/register?redirect=/comic" className="elegant-btn text-lg group">
-                                    დაიწყე უფასოდ <Sparkles size={18} className="ml-2 group-hover:rotate-12 transition-transform" />
+                                <Link
+                                    href="/auth/register?redirect=/comic"
+                                    className="elegant-btn text-lg inline-flex items-center gap-2 group"
+                                >
+                                    დაიწყე უფასოდ <ArrowRight size={18} className="group-hover:translate-x-0.5 transition-transform" />
                                 </Link>
                             )}
-                            <Link href="#how" className="elegant-btn-outline text-lg">
+                            <Link
+                                href="#how"
+                                className="elegant-btn-outline text-lg inline-flex items-center gap-2"
+                            >
                                 როგორ მუშაობს
                             </Link>
                         </div>
 
-                        <div className="flex flex-wrap gap-6 text-sm text-text-mutted pt-4">
-                            <span className="flex items-center gap-1.5"><Download size={14} /> ციფრული {formatPrice(PRICES.digital)}</span>
-                            <span className="flex items-center gap-1.5"><Truck size={14} /> ბეჭდური +{formatPrice(PRICES.print)}</span>
+                        {/* Price row — typographic, not chip-y */}
+                        <div className="flex items-baseline gap-8 pt-4 text-sm text-text-mutted">
+                            <span className="flex items-baseline gap-2">
+                                <span className="font-serif text-2xl text-text-dark">
+                                    {formatPrice(PRICES.digital)}
+                                </span>
+                                <span className="text-[11px] uppercase tracking-[0.22em] font-mono">
+                                    ციფრული
+                                </span>
+                            </span>
+                            <span className="text-text-mutted/30 select-none">·</span>
+                            <span className="flex items-baseline gap-2">
+                                <span className="font-serif text-2xl text-text-dark">
+                                    +{formatPrice(PRICES.print)}
+                                </span>
+                                <span className="text-[11px] uppercase tracking-[0.22em] font-mono">
+                                    ბეჭდური
+                                </span>
+                            </span>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        {COMIC_STYLES.slice(0, 4).map((s) => (
-                            <div
-                                key={s.id}
-                                className="aspect-[3/4] rounded-2xl overflow-hidden border border-rose-100 shadow-md bg-rose-50/40 relative"
-                            >
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                    src={s.sample}
-                                    alt={s.nameGe}
-                                    className="absolute inset-0 w-full h-full object-cover"
-                                />
-                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 z-10">
-                                    <p className="text-white text-xs font-bold">{s.nameGe}</p>
+                    {/* Sample collage — slightly offset, deliberate composition */}
+                    <div className="relative h-[480px] sm:h-[560px]">
+                        {COMIC_STYLES.slice(0, 4).map((s, i) => {
+                            const positions = [
+                                "top-0 left-0 rotate-[-3deg]",
+                                "top-4 right-0 rotate-[2deg]",
+                                "bottom-0 left-6 rotate-[1.5deg]",
+                                "bottom-4 right-4 rotate-[-2deg]",
+                            ];
+                            return (
+                                <div
+                                    key={s.id}
+                                    className={`absolute w-[42%] aspect-[3/4] rounded-2xl overflow-hidden border border-rose-100 shadow-[0_18px_40px_-20px_rgba(138,31,59,0.3)] bg-rose-50/40 ${positions[i]}`}
+                                >
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                        src={s.sample}
+                                        alt={s.nameGe}
+                                        className="absolute inset-0 w-full h-full object-cover"
+                                    />
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </section>
 
-                {/* Existing projects */}
+                {/* Existing projects — typographic list, no boxy cards */}
                 {user && projects.length > 0 && (
-                    <section className="max-w-6xl mx-auto px-6 mt-20">
-                        <h2 className="text-2xl font-serif text-text-dark mb-6">ჩემი კომიქსები</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {projects.map((p) => (
-                                <Link
-                                    key={p.id}
-                                    href={resumeHref(p)}
-                                    className="bg-white rounded-2xl border border-rose-100 p-6 hover:shadow-lg transition-shadow"
-                                >
-                                    <div className="flex items-center justify-between mb-2">
-                                        <h3 className="font-serif text-lg text-text-dark truncate">{p.title}</h3>
-                                        <StatusBadge status={p.status} />
-                                    </div>
-                                    <p className="text-xs text-text-mutted">
-                                        {new Date(p.created_at).toLocaleDateString("ka-GE")}
-                                    </p>
-                                </Link>
-                            ))}
+                    <section className="max-w-3xl mx-auto px-6 mt-32">
+                        <div className="flex items-baseline justify-between mb-6">
+                            <h2 className="font-serif text-2xl text-text-dark">ჩემი კომიქსები</h2>
+                            <span className="text-[11px] uppercase tracking-[0.22em] font-mono text-text-mutted/70">
+                                {projects.length.toString().padStart(2, "0")}
+                            </span>
                         </div>
+                        <ul className="divide-y divide-rose-100/60 border-y border-rose-100/60">
+                            {projects.map((p, idx) => (
+                                <li key={p.id}>
+                                    <Link
+                                        href={resumeHref(p)}
+                                        className="flex items-baseline gap-5 py-4 hover:bg-rose-50/30 -mx-3 px-3 transition-colors rounded-lg"
+                                    >
+                                        <span className="font-mono text-[11px] text-text-mutted/60 tabular-nums w-6 shrink-0">
+                                            {(idx + 1).toString().padStart(2, "0")}
+                                        </span>
+                                        <span className="font-serif text-lg text-text-dark flex-1 truncate">
+                                            {p.title || "უსათაურო"}
+                                        </span>
+                                        <StatusLabel status={p.status} paidDigital={p.paid_digital} />
+                                        <span className="text-[11px] uppercase tracking-[0.18em] font-mono text-text-mutted/50 hidden sm:inline">
+                                            {new Date(p.created_at).toLocaleDateString("ka-GE", {
+                                                day: "2-digit",
+                                                month: "short",
+                                            })}
+                                        </span>
+                                        <ArrowRight
+                                            size={14}
+                                            className="text-text-mutted/40 group-hover:text-primary"
+                                        />
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
                     </section>
                 )}
 
-                {/* How it works */}
-                <section id="how" className="max-w-5xl mx-auto px-6 mt-32">
-                    <div className="text-center mb-16 space-y-4">
-                        <h2 className="text-4xl md:text-5xl font-serif text-text-dark">როგორ მუშაობს</h2>
-                        <p className="text-text-mutted">4 მარტივი ნაბიჯი, 5 წუთში</p>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {STEPS.map(({ icon: Icon, title, desc }, idx) => (
-                            <div key={idx} className="bg-white rounded-3xl p-6 border border-rose-100 shadow-sm">
-                                <div className="w-12 h-12 rounded-full bg-rose-50 text-primary flex items-center justify-center mb-4">
-                                    <Icon size={24} />
+                {/* How it works — typographic numbered list, no cards */}
+                <section id="how" className="max-w-4xl mx-auto px-6 mt-36 sm:mt-44">
+                    <header className="text-center mb-16">
+                        <p className="text-[11px] uppercase tracking-[0.28em] font-mono text-text-mutted/70 mb-3">
+                            ოთხ ნაბიჯში
+                        </p>
+                        <h2 className="font-serif text-4xl sm:text-5xl text-text-dark leading-[1.05]">
+                            როგორ <span className="italic text-primary">მუშაობს</span>
+                        </h2>
+                    </header>
+
+                    <ol className="space-y-10">
+                        {STEPS.map(({ num, icon: Icon, title, desc }) => (
+                            <li
+                                key={num}
+                                className="grid grid-cols-[auto_1fr] gap-6 sm:gap-10 items-baseline pb-10 last:pb-0 border-b last:border-b-0 border-rose-100/60"
+                            >
+                                <span className="font-serif text-5xl sm:text-6xl text-rose-200/80 select-none">
+                                    {num}
+                                </span>
+                                <div>
+                                    <h3 className="font-serif text-2xl text-text-dark mb-1.5 inline-flex items-baseline gap-3">
+                                        <Icon
+                                            size={20}
+                                            className="text-primary -translate-y-0.5 shrink-0"
+                                            strokeWidth={1.75}
+                                        />
+                                        <span>{title}</span>
+                                    </h3>
+                                    <p className="text-text-mutted leading-relaxed">{desc}</p>
                                 </div>
-                                <h3 className="font-serif font-bold text-text-dark mb-2">{idx + 1}. {title}</h3>
-                                <p className="text-sm text-text-mutted leading-relaxed">{desc}</p>
-                            </div>
+                            </li>
                         ))}
-                    </div>
+                    </ol>
                 </section>
 
-                {/* Style showcase */}
-                <section className="max-w-6xl mx-auto px-6 mt-32">
-                    <div className="text-center mb-12 space-y-4">
-                        <h2 className="text-4xl font-serif text-text-dark">აირჩიე სტილი</h2>
-                        <p className="text-text-mutted">6 უნიკალური ვიზუალური ხელწერა</p>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                        {COMIC_STYLES.map((s) => (
-                            <div key={s.id} className="bg-white rounded-2xl border border-rose-100 p-4 shadow-sm">
-                                <div className="aspect-[3/4] rounded-xl overflow-hidden mb-3 relative bg-gradient-to-br from-rose-50 to-amber-50">
+                {/* Style showcase — gallery wall, not card grid */}
+                <section className="max-w-6xl mx-auto px-6 mt-36 sm:mt-44">
+                    <header className="text-center mb-16">
+                        <p className="text-[11px] uppercase tracking-[0.28em] font-mono text-text-mutted/70 mb-3">
+                            ექვსი ხელწერა
+                        </p>
+                        <h2 className="font-serif text-4xl sm:text-5xl text-text-dark leading-[1.05]">
+                            აირჩიე <span className="italic text-primary">სტილი</span>
+                        </h2>
+                    </header>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-12">
+                        {COMIC_STYLES.map((s, idx) => (
+                            <figure key={s.id} className="group">
+                                <div className="aspect-[3/4] rounded-2xl overflow-hidden mb-3 relative bg-rose-50/40 border border-rose-100/60 shadow-[0_14px_30px_-18px_rgba(138,31,59,0.2)]">
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
                                         src={s.sample}
                                         alt={s.name}
-                                        className="absolute inset-0 w-full h-full object-cover"
+                                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
                                     />
                                 </div>
-                                <h3 className="font-serif font-bold text-text-dark text-sm">{s.nameGe}</h3>
-                                <p className="text-xs text-text-mutted mt-1">{s.taglineGe}</p>
-                            </div>
+                                <figcaption className="flex items-baseline justify-between gap-3">
+                                    <div>
+                                        <h3 className="font-serif text-lg text-text-dark leading-tight">
+                                            {s.nameGe}
+                                        </h3>
+                                        <p className="text-xs text-text-mutted mt-0.5">
+                                            {s.taglineGe}
+                                        </p>
+                                    </div>
+                                    <span className="font-mono text-[10px] text-text-mutted/50 tabular-nums">
+                                        {(idx + 1).toString().padStart(2, "0")}
+                                    </span>
+                                </figcaption>
+                            </figure>
                         ))}
                     </div>
                 </section>
 
-                {/* CTA */}
-                <section className="max-w-3xl mx-auto px-6 mt-32 text-center space-y-8">
-                    <h2 className="text-4xl md:text-5xl font-serif text-text-dark">მზად ხარ?</h2>
-                    <p className="text-text-mutted text-lg">
-                        ჩვენი AI მზადაა შენი ისტორიის მოსასმენად.
+                {/* Closing CTA */}
+                <section className="max-w-2xl mx-auto px-6 mt-36 sm:mt-44 text-center">
+                    <h2 className="font-serif text-4xl sm:text-5xl text-text-dark leading-[1.05]">
+                        მზად <span className="italic text-primary">ხარ?</span>
+                    </h2>
+                    <p className="text-text-mutted mt-4 mb-10 leading-relaxed">
+                        AI მზადაა შენი ისტორიის მოსასმენად. 5 წუთში დაასრულებ.
                     </p>
                     {user ? (
-                        <NewProjectButton className="elegant-btn text-lg">
+                        <NewProjectButton className="elegant-btn text-lg inline-flex items-center gap-2">
                             <Plus size={20} /> ახალი კომიქსი
                         </NewProjectButton>
                     ) : (
-                        <Link href="/auth/register?redirect=/comic" className="elegant-btn text-lg inline-flex">
-                            დაიწყე უფასოდ <Sparkles size={18} className="ml-2" />
+                        <Link
+                            href="/auth/register?redirect=/comic"
+                            className="elegant-btn text-lg inline-flex items-center gap-2"
+                        >
+                            დაიწყე უფასოდ <ArrowRight size={18} />
                         </Link>
                     )}
                 </section>
@@ -204,17 +304,32 @@ function resumeHref(p) {
     }
 }
 
-function StatusBadge({ status }) {
+function StatusLabel({ status, paidDigital }) {
+    if (!paidDigital) {
+        return (
+            <span className="text-[10px] uppercase tracking-[0.22em] font-mono text-amber-700 hidden md:inline">
+                გადახდის მოლოდინში
+            </span>
+        );
+    }
     const map = {
-        draft: { label: "მონახაზი", cls: "bg-gray-100 text-gray-600" },
-        interviewing: { label: "ისტორია", cls: "bg-blue-50 text-blue-600" },
-        characters: { label: "პერსონაჟები", cls: "bg-purple-50 text-purple-600" },
-        styling: { label: "სტილი", cls: "bg-amber-50 text-amber-600" },
-        generating: { label: "იხატება...", cls: "bg-yellow-50 text-yellow-700" },
-        preview: { label: "მზადაა", cls: "bg-green-50 text-green-600" },
-        paid: { label: "გადახდილია", cls: "bg-emerald-50 text-emerald-700" },
-        fulfilled: { label: "მიწოდებული", cls: "bg-emerald-50 text-emerald-700" },
+        draft: "მონახაზი",
+        interviewing: "ისტორია",
+        characters: "პერსონაჟები",
+        styling: "სტილი",
+        generating: "იხატება",
+        preview: "მზადაა",
+        paid: "გადახდილია",
+        fulfilled: "მიწოდებული",
     };
-    const v = map[status] || map.draft;
-    return <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${v.cls}`}>{v.label}</span>;
+    const isDone = status === "preview" || status === "paid" || status === "fulfilled";
+    return (
+        <span
+            className={`text-[10px] uppercase tracking-[0.22em] font-mono hidden md:inline ${
+                isDone ? "text-primary" : "text-text-mutted/70"
+            }`}
+        >
+            {map[status] || "მონახაზი"}
+        </span>
+    );
 }

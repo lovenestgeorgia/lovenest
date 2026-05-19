@@ -44,11 +44,22 @@ export async function POST(req, { params }) {
     const contents = toGeminiContents(history || []);
 
     const client = getGemini();
+    const streamStart = Date.now();
+    const txtChars = contents.reduce(
+        (sum, c) => sum + (c.parts?.[0]?.text?.length || 0),
+        0
+    );
+    console.log(
+        `[gemini:chat-stream] → model="${TEXT_MODEL}" turns=${contents.length} txt=${txtChars}c`
+    );
     const stream = await client.models.generateContentStream({
         model: TEXT_MODEL,
         contents,
         config: { systemInstruction },
     });
+    console.log(
+        `[gemini:chat-stream] ✓ stream opened in ${Date.now() - streamStart}ms`
+    );
 
     const encoder = new TextEncoder();
     let full = "";

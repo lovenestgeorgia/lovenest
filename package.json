@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@google/genai": "^0.14.0",
+    "@napi-rs/canvas": "^0.1.59",
     "@heroicons/react": "^2.2.0",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.45.0",

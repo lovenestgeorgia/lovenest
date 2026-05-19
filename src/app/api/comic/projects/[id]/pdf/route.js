@@ -15,7 +15,7 @@ export async function GET(_req, { params }) {
     const [{ data: project }, { data: panels }] = await Promise.all([
         supabase
             .from("comic_projects")
-            .select("id, title, paid_digital")
+            .select("id, title, paid_digital, user_id")
             .eq("id", id)
             .single(),
         supabase
@@ -26,6 +26,11 @@ export async function GET(_req, { params }) {
     ]);
 
     if (!project) return NextResponse.json({ error: "not found" }, { status: 404 });
+    // Explicit ownership check — never rely on RLS alone for paid deliverables.
+    // Even when the dev bypass is active, the user must still own the project.
+    if (project.user_id !== user.id) {
+        return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
     if (!project.paid_digital && !isDevUser(user)) {
         return NextResponse.json({ error: "not paid" }, { status: 402 });
     }

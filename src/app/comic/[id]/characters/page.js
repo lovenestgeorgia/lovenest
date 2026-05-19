@@ -2,10 +2,11 @@ import { notFound } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { ensurePaidDigital } from "@/lib/comic/access";
 import { CharacterUploader } from "@/components/comic/CharacterUploader";
+import { StudioSheet, StudioHeading } from "@/components/comic/StudioChrome";
 
 export default async function CharactersStepPage({ params }) {
     const { id } = await params;
-    await ensurePaidDigital(id);
+    await ensurePaidDigital(id, "characters");
     const supabase = await getSupabaseServer();
 
     const [{ data: project }, { data: characters }] = await Promise.all([
@@ -20,15 +21,15 @@ export default async function CharactersStepPage({ params }) {
     if (!project) notFound();
 
     return (
-        <div className="bg-white rounded-3xl border border-rose-100 shadow-sm p-6 md:p-10">
-            <div className="mb-8">
-                <h1 className="text-3xl font-serif text-text-dark mb-2">ვინ მონაწილეობს?</h1>
-                <p className="text-text-mutted text-sm">
-                    ატვირთე თითო პერსონაჟის ერთი ფოტო — ჩვენი AI შეისწავლის სახეს და გამოიყენებს ყველა კადრში.
-                </p>
-            </div>
+        <StudioSheet className="p-6 sm:p-10">
+            <StudioHeading eyebrow="02 — პერსონაჟები" accent="მონაწილეობს?">
+                ვინ
+            </StudioHeading>
+            <p className="text-center text-sm text-text-mutted max-w-md mx-auto mt-3 mb-10 leading-relaxed">
+                ატვირთე თითო პერსონაჟის ერთი ფოტო. AI შეისწავლის სახეს და გამოიყენებს ყველა კადრში.
+            </p>
 
             <CharacterUploader projectId={project.id} initialCharacters={characters || []} />
-        </div>
+        </StudioSheet>
     );
 }

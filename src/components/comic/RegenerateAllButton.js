@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { RotateCcw } from "lucide-react";
+import { clearStartedFlag } from "@/components/comic/GenerationProgress";
 
 export function RegenerateAllButton({ projectId }) {
-    const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [confirming, setConfirming] = useState(false);
     const [error, setError] = useState(null);
@@ -21,7 +20,11 @@ export function RegenerateAllButton({ projectId }) {
                 const j = await res.json().catch(() => ({}));
                 throw new Error(j.error || "Failed");
             }
-            router.push(`/comic/${projectId}/generate`);
+            // Full reload so the module-level "already started" guard inside
+            // GenerationProgress resets. Without this the next mount silently
+            // skips POST /generate.
+            clearStartedFlag(projectId);
+            window.location.href = `/comic/${projectId}/generate`;
         } catch (e) {
             setError(e.message);
             setLoading(false);

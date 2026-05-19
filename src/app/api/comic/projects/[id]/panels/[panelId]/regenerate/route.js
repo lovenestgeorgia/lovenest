@@ -2,12 +2,39 @@ import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { generateImage } from "@/lib/gemini";
-import { buildPanelImagePrompt, buildCharacterSheetPrompt } from "@/lib/comic/prompts";
+import { generatePanelArt } from "@/lib/comic/imageProvider";
+import { buildPanelImagePrompt, buildTextOverlayPrompt } from "@/lib/comic/prompts";
 import { getStyleById } from "@/lib/comic/styles";
 import { CHARACTER_BUCKET, PANEL_BUCKET, panelPath } from "@/lib/comic/storage";
+import { critiquePanel } from "@/lib/comic/critic";
+import { classifyRegenComment } from "@/lib/comic/classify";
+import { normalizeRefImage } from "@/lib/comic/imageNormalize";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
+
+// Hard cap on how many times a single panel can be regenerated. Each call
+// hits Nano Banana Pro + optionally a character-sheet generation, so without
+// this limit a frustrated user can rack up a tab fast.
+const MAX_REGEN_PER_PANEL = 8;
+
+function artPathOf(finalPath) {
+    return finalPath?.replace(/\.png$/, ".art.png");
+}
+
+async function downloadAsBase64(admin, bucket, path) {
+    try {
+        const { data: blob } = await admin.storage.from(bucket).download(path);
+        if (!blob) return null;
+        const buf = Buffer.from(await blob.arrayBuffer());
+        // Normalize to clean PNG — uploaded photos may be JPEG/HEIC/WebP
+        // which OpenAI's images.edit endpoint rejects with 400.
+        return await normalizeRefImage(buf);
+    } catch (e) {
+        console.warn(`[regenerate] download failed for ${path}:`, e.message);
+        return null;
+    }
+}
 
 export async function POST(req, { params }) {
     const { id, panelId } = await params;
@@ -23,99 +50,163 @@ export async function POST(req, { params }) {
         supabase.from("comic_panels").select("*").eq("id", panelId).eq("project_id", id).single(),
         supabase
             .from("comic_characters")
-            .select("name, description, persona, wardrobe, reference_image_path")
+            .select("id, name, description, persona, wardrobe, reference_image_path, character_sheet_path")
             .eq("project_id", id),
     ]);
 
     if (!project || !panel) return NextResponse.json({ error: "not found" }, { status: 404 });
+    if (project.user_id !== user.id) {
+        return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
     const style = getStyleById(project.style_id);
     if (!style) return NextResponse.json({ error: "no style" }, { status: 400 });
+
+    if ((panel.revision_count || 0) >= MAX_REGEN_PER_PANEL) {
+        return NextResponse.json(
+            { error: `regenerate limit reached (${MAX_REGEN_PER_PANEL}) for this panel` },
+            { status: 429 }
+        );
+    }
 
     const admin = getSupabaseAdmin();
     await admin.from("comic_panels").update({ status: "generating" }).eq("id", panelId);
 
-    try {
-        const prompt = buildPanelImagePrompt({
-            stylePrefix: style.promptPrefix,
-            coverTypography: style.coverTypography,
-            pageType: panel.page_type || "story",
-            title: project.title,
-            subtitle: project.subtitle || "",
-            sceneDescription: panel.scene_prompt,
-            location: panel.location || "",
-            actions: panel.actions || [],
-            dialogue: panel.dialogue || [],
-            caption: panel.caption,
-            charactersInScene: (characters || []).map((c) => c.name),
-            characters: characters || [],
-            userComment,
-        });
+    const pageType = panel.page_type || "story";
+    const needsText =
+        pageType === "cover" ||
+        (Array.isArray(panel.dialogue) && panel.dialogue.length > 0) ||
+        !!panel.caption;
 
-        // When the user supplied a correction note, prepend the EXISTING
-        // panel image as the first reference so this becomes an edit operation
-        // (Nano Banana does an img2img-style fix rather than a fresh generate).
-        const refImages = [];
-        if (userComment && panel.image_path) {
-            try {
-                const { data: prevBlob } = await admin.storage
-                    .from(PANEL_BUCKET)
-                    .download(panel.image_path);
-                if (prevBlob) {
-                    const buf = Buffer.from(await prevBlob.arrayBuffer());
-                    refImages.push({
-                        base64: buf.toString("base64"),
-                        mimeType: prevBlob.type || "image/png",
-                    });
+    try {
+        // ── CLASSIFY user's correction comment (text-only vs visual) ──
+        // Only matters when the user gave us a comment AND this panel
+        // actually has text to fix. Without a comment, default to a full redo.
+        const classification = needsText
+            ? await classifyRegenComment(userComment)
+            : { kind: "visual", reason: "no text on this panel" };
+
+        // Try to load the text-free art saved from the prior generation.
+        // If it exists AND the user's complaint is text-only, we can skip
+        // OpenAI entirely and just re-overlay text with Gemini.
+        const artPath = artPathOf(panel.image_path);
+        const savedArt = classification.kind === "text" && artPath
+            ? await downloadAsBase64(admin, PANEL_BUCKET, artPath)
+            : null;
+
+        // Final decision: text-only path requires (a) classifier said "text"
+        // (b) the text-free art is on disk and (c) panel actually has text.
+        const textOnlyPath = classification.kind === "text" && !!savedArt && needsText;
+
+        let base64;
+        let artBase64 = null;
+        let artDataUrl = null;
+
+        if (textOnlyPath) {
+            // ── TEXT-ONLY: skip OpenAI, only re-run Gemini overlay ──
+            console.log(
+                `[regenerate] panel ${panel.ord}: text-only fix (skipping OpenAI). reason: ${classification.reason}`
+            );
+            artBase64 = savedArt.base64;
+            artDataUrl = `data:image/png;base64,${artBase64}`;
+
+            const overlayPrompt = buildTextOverlayPrompt({
+                pageType,
+                dialogue: panel.dialogue,
+                caption: panel.caption,
+                title: project.title,
+                subtitle: project.subtitle || "",
+                coverTypography: style.coverTypography,
+                stylePrefix: style.promptPrefix,
+                userCorrection: userComment,
+            });
+            const overlayResult = await generateImage({
+                prompt: overlayPrompt,
+                referenceImages: [{ base64: artBase64, mimeType: "image/png" }],
+                aspectRatio: "2:3",
+            });
+            base64 = overlayResult.base64;
+        } else {
+            // ── FULL PIPELINE: PASS 1 (OpenAI) + PASS 2 (Gemini) ──
+            console.log(
+                `[regenerate] panel ${panel.ord}: full redo. classification=${classification.kind}, reason: ${classification.reason}`
+            );
+
+            const prompt = buildPanelImagePrompt({
+                stylePrefix: style.promptPrefix,
+                coverTypography: style.coverTypography,
+                pageType,
+                title: project.title,
+                subtitle: project.subtitle || "",
+                sceneDescription: panel.scene_prompt,
+                location: panel.location || "",
+                actions: panel.actions || [],
+                dialogue: panel.dialogue || [],
+                caption: panel.caption,
+                charactersInScene: (characters || []).map((c) => c.name),
+                characters: characters || [],
+                userComment,
+            });
+
+            // When the user supplied a correction note, prepend the EXISTING
+            // panel image as the first reference so this becomes an edit operation
+            // (Nano Banana does an img2img-style fix rather than a fresh generate).
+            const refImages = [];
+            if (userComment && panel.image_path) {
+                const prev = await downloadAsBase64(admin, PANEL_BUCKET, panel.image_path);
+                if (prev) refImages.push(prev);
+            }
+
+            // Use the cached character sheet from the bulk run if it exists.
+            // Never generate a fresh sheet on a per-panel retry — that adds
+            // 30-120s per character to every retry and frequently times out.
+            for (const c of characters || []) {
+                if (!c.reference_image_path) continue;
+
+                if (c.character_sheet_path) {
+                    const sheet = await downloadAsBase64(admin, CHARACTER_BUCKET, c.character_sheet_path);
+                    if (sheet) refImages.push(sheet);
                 }
-            } catch (e) {
-                console.warn("prev panel download failed:", e.message);
+
+                const photo = await downloadAsBase64(admin, CHARACTER_BUCKET, c.reference_image_path);
+                if (photo) refImages.push(photo);
+            }
+
+            // ── PASS 1: text-free panel art (provider per IMAGE_PROVIDER env) ──
+            const artResult = await generatePanelArt({
+                prompt,
+                referenceImages: refImages,
+                aspectRatio: "2:3",
+            });
+            base64 = artResult.base64;
+            artBase64 = artResult.base64;
+            if (needsText) artDataUrl = `data:image/png;base64,${base64}`;
+
+            // ── PASS 2: Gemini Nano Banana Pro adds Georgian text ──
+            if (needsText) {
+                try {
+                    const overlayPrompt = buildTextOverlayPrompt({
+                        pageType,
+                        dialogue: panel.dialogue,
+                        caption: panel.caption,
+                        title: project.title,
+                        subtitle: project.subtitle || "",
+                        coverTypography: style.coverTypography,
+                        stylePrefix: style.promptPrefix,
+                        userCorrection: classification.kind === "both" ? userComment : "",
+                    });
+                    const overlayResult = await generateImage({
+                        prompt: overlayPrompt,
+                        referenceImages: [{ base64, mimeType: "image/png" }],
+                        aspectRatio: "2:3",
+                    });
+                    base64 = overlayResult.base64;
+                } catch (e) {
+                    console.warn(`[regenerate] text overlay failed, keeping bare art:`, e.message);
+                }
             }
         }
 
-        // Load original photos + freshly stylized character sheets so the
-        // single-panel regen has the same anchors as the bulk pipeline.
-        for (const c of characters || []) {
-            if (!c.reference_image_path) continue;
-            try {
-                const { data: blob } = await admin.storage
-                    .from(CHARACTER_BUCKET)
-                    .download(c.reference_image_path);
-                if (!blob) continue;
-                const buf = Buffer.from(await blob.arrayBuffer());
-                const photoRef = {
-                    base64: buf.toString("base64"),
-                    mimeType: blob.type || "image/png",
-                };
-
-                // Generate a styled character sheet to lock the in-style look
-                try {
-                    const sheetPrompt = buildCharacterSheetPrompt({
-                        stylePrefix: style.promptPrefix,
-                        character: c,
-                    });
-                    const sheet = await generateImage({
-                        prompt: sheetPrompt,
-                        referenceImages: [photoRef],
-                        aspectRatio: "1:1",
-                    });
-                    refImages.push({
-                        base64: sheet.base64,
-                        mimeType: sheet.mimeType || "image/png",
-                    });
-                } catch (e) {
-                    console.warn(`sheet skipped for ${c.name}:`, e.message);
-                }
-
-                refImages.push(photoRef);
-            } catch {}
-        }
-
-        const { base64 } = await generateImage({
-            prompt,
-            referenceImages: refImages,
-            aspectRatio: "2:3",
-        });
-
+        // ── Upload final + text-free art alongside it ──
         const bytes = Buffer.from(base64, "base64");
         const path = panelPath({
             userId: user.id,
@@ -127,9 +218,37 @@ export async function POST(req, { params }) {
             contentType: "image/png",
             upsert: true,
         });
+
+        // Persist the new text-free art too, so the next text-only retry can
+        // skip OpenAI again. Skip if there was no separate art (closing pages
+        // without text never produced a distinct art version).
+        if (artBase64 && artBase64 !== base64) {
+            try {
+                await admin.storage
+                    .from(PANEL_BUCKET)
+                    .upload(artPathOf(path), Buffer.from(artBase64, "base64"), {
+                        contentType: "image/png",
+                        upsert: true,
+                    });
+            } catch (e) {
+                console.warn(`[regenerate] art-only upload failed:`, e.message);
+            }
+        }
+
         const { data: signed } = await admin.storage
             .from(PANEL_BUCKET)
             .createSignedUrl(path, 60 * 60 * 24 * 30);
+
+        // Critic pass — re-evaluate the regenerated panel
+        const critique = await critiquePanel({
+            imageBase64: base64,
+            mimeType: "image/png",
+            pageType,
+            dialogue: panel.dialogue,
+            caption: panel.caption,
+            title: pageType === "cover" ? project.title : "",
+            characters: characters || [],
+        });
 
         const { data: updated } = await admin
             .from("comic_panels")
@@ -139,12 +258,19 @@ export async function POST(req, { params }) {
                 image_url: signed.signedUrl,
                 revision_count: (panel.revision_count || 0) + 1,
                 is_hq: !!project.paid_digital,
+                critique,
             })
             .eq("id", panelId)
             .select("*")
             .single();
 
-        return NextResponse.json({ panel: updated, image_url: signed.signedUrl });
+        return NextResponse.json({
+            panel: updated,
+            image_url: signed.signedUrl,
+            art_data_url: artDataUrl,
+            classification,
+            critique,
+        });
     } catch (err) {
         console.error("regenerate failed:", err);
         await admin.from("comic_panels").update({ status: "failed" }).eq("id", panelId);

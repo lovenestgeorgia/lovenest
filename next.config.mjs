@@ -17,6 +17,8 @@ const nextConfig = {
         : []),
     ],
   },
+  // Native binding — must be required at runtime, not bundled by Turbopack.
+  serverExternalPackages: ["@napi-rs/canvas"],
 };
 
 export default nextConfig;

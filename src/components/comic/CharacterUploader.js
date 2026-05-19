@@ -3,7 +3,22 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Plus, Upload, Trash2, ArrowRight, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus, Upload, Trash2, ArrowRight, Sparkles, Sun, User, Smile, Camera } from "lucide-react";
+import { AiErrorModal } from "@/components/comic/AiErrorModal";
+
+const FACE_ISSUE_MESSAGES = {
+    no_face: "ფოტოზე სახე ვერ ვიპოვეთ. ატვირთე ფოტო სადაც სახე კარგად ჩანს.",
+    multiple_faces:
+        "ფოტოზე რამდენიმე სახეა — ერთი პერსონაჟისთვის ერთი სახე უნდა იყოს. გადახარისხე ფოტო.",
+    blurry: "ფოტო ბუნდოვანია. სცადე უფრო მკაფიო, ფოკუსში მყოფი ფოტო.",
+    too_dark: "ფოტო ძალიან ბნელია. გვჭირდება უკეთ განათებული ფოტო.",
+    face_too_small: "ფოტოზე სახე ძალიან შორსაა. სცადე ფოტო სადაც სახე უფრო კარგად ჩანს.",
+    occluded:
+        "სახე დაფარულია (ნიღაბი/ხელი). გვჭირდება ფოტო სადაც სრული სახე ჩანს.",
+    low_resolution: "ფოტოს გარჩევადობა დაბალია. ატვირთე უფრო მაღალი ხარისხის ფოტო.",
+    not_a_person: "ფოტოზე ადამიანი არ ჩანს. გვჭირდება პერსონაჟის ფოტო.",
+};
 
 export function CharacterUploader({ projectId, initialCharacters }) {
     const router = useRouter();
@@ -11,6 +26,7 @@ export function CharacterUploader({ projectId, initialCharacters }) {
     const [characters, setCharacters] = useState(initialCharacters);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState(null);
+    const [aiError, setAiError] = useState(null); // { code, detail }
     const [advancing, setAdvancing] = useState(false);
 
     const [draft, setDraft] = useState({ name: "", description: "" });
@@ -45,7 +61,19 @@ export function CharacterUploader({ projectId, initialCharacters }) {
                 body: fd,
             });
             const json = await res.json();
-            if (!res.ok) throw new Error(json.error || "Failed");
+            if (!res.ok) {
+                if (json.error === "face_quality") {
+                    throw new Error(
+                        FACE_ISSUE_MESSAGES[json.issue] ||
+                            "ფოტო არ შეესაბამება მოთხოვნებს. სცადე სხვა ფოტო."
+                    );
+                }
+                if (json.error === "ai_unavailable" || json.error === "ai_failed") {
+                    setAiError({ code: json.error, detail: json.detail || "" });
+                    return; // modal handles UX; don't show inline error too
+                }
+                throw new Error(json.error || "Failed");
+            }
             setCharacters((cs) => [...cs, json.character]);
             setDraft({ name: "", description: "" });
             setDraftFile(null);
@@ -82,6 +110,39 @@ export function CharacterUploader({ projectId, initialCharacters }) {
 
     return (
         <div className="space-y-8">
+            {/* Photo guidance — shown only when there are no characters yet,
+                so first-time users avoid face_quality rejections */}
+            {characters.length === 0 && (
+                <div className="bg-amber-50/40 border border-amber-100/80 rounded-2xl p-5">
+                    <div className="flex items-baseline gap-2 mb-3">
+                        <Camera size={14} className="text-primary translate-y-[2px]" />
+                        <h3 className="font-serif font-bold text-text-dark text-sm">
+                            რა არის კარგი ფოტო?
+                        </h3>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {[
+                            { icon: User, label: "ერთი სახე ფოტოზე" },
+                            { icon: Sun, label: "კარგი განათება" },
+                            { icon: Smile, label: "ღია სახე" },
+                            { icon: Camera, label: "ფოკუსში, არ ბუნდოვანი" },
+                        ].map(({ icon: Icon, label }, i) => (
+                            <div
+                                key={i}
+                                className="flex flex-col items-center text-center gap-2 p-2"
+                            >
+                                <span className="w-10 h-10 rounded-full bg-white text-primary flex items-center justify-center border border-amber-100">
+                                    <Icon size={16} strokeWidth={1.75} />
+                                </span>
+                                <span className="text-[11px] text-text-mutted leading-tight">
+                                    {label}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Existing */}
             {characters.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -127,7 +188,14 @@ export function CharacterUploader({ projectId, initialCharacters }) {
 
             {/* Add new */}
             <div className="bg-rose-50/20 rounded-2xl border-2 border-dashed border-rose-200 p-6">
-                <h3 className="font-serif text-lg text-text-dark mb-4">დაამატე პერსონაჟი</h3>
+                <div className="flex items-baseline justify-between mb-4">
+                    <h3 className="font-serif text-lg text-text-dark">
+                        {characters.length === 0 ? "დაამატე პერსონაჟი" : "კიდევ ერთი პერსონაჟი"}
+                    </h3>
+                    <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-text-mutted/70">
+                        {characters.length}/8
+                    </span>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-[140px_1fr] gap-4">
                     <button
@@ -182,7 +250,10 @@ export function CharacterUploader({ projectId, initialCharacters }) {
                     className="elegant-btn mt-4 text-sm inline-flex items-center gap-2"
                 >
                     {uploading ? (
-                        "ვამუშავებთ..."
+                        <span className="inline-flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                            AI ამოწმებს ფოტოს...
+                        </span>
                     ) : (
                         <>
                             <Plus size={16} /> დამატება
@@ -200,6 +271,11 @@ export function CharacterUploader({ projectId, initialCharacters }) {
                     შემდეგი: სტილი <ArrowRight size={16} />
                 </button>
             </div>
+
+            <AiErrorModal
+                error={aiError}
+                onClose={() => setAiError(null)}
+            />
         </div>
     );
 }
