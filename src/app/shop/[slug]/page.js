@@ -28,7 +28,7 @@ export default function ProductPage({ params }) {
                 content_name: 'წამიკითხე როცა დაგჭირდები',
                 content_category: 'წიგნი',
                 content_type: 'product',
-                value: 39.00,
+                value: 19.00,
                 currency: 'GEL'
             });
         }
@@ -40,14 +40,14 @@ export default function ProductPage({ params }) {
             window.fbq('track', 'AddToCart', {
                 content_name: 'წამიკითხე როცა დაგჭირდები',
                 content_type: 'product',
-                value: 39.00,
+                value: 19.00,
                 currency: 'GEL'
             });
         }
         addItem({
             id: "book-1",
             name: "წამიკითხე როცა დაგჭირდები",
-            price: 39.00,
+            price: 19.00,
             image: "/hero.png",
             quantity: 1
         });
@@ -157,10 +157,11 @@ export default function ProductPage({ params }) {
                             {/* Price Block */}
                             <div className="mb-8 flex flex-col gap-1">
                                 <div className="flex items-end gap-3 sm:gap-4">
-                                    <span className="text-5xl sm:text-6xl font-serif text-text-dark font-medium tracking-tight">39.00 <span className="text-3xl">₾</span></span>
+                                    <span className="text-5xl sm:text-6xl font-serif text-text-dark font-medium tracking-tight">19.00 <span className="text-3xl">₾</span></span>
                                     <span className="text-lg sm:text-xl text-text-mutted line-through font-sans font-light mb-2 opacity-60">65.00 ₾</span>
-                                    <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-md mb-3 ml-2 border border-green-200">-40% ფასდაკლება</span>
+                                    <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-md mb-3 ml-2 border border-green-200">🎂 დაბადების დღე −71%</span>
                                 </div>
+                                <p className="text-sm text-primary font-bold flex items-center gap-1.5">🎂 Lovenest-ის დაბადების დღე — წელიწადში ერთხელ!</p>
                                 <p className="text-xs text-text-mutted flex items-center gap-1.5"><Shield size={12} /> ყველა გადასახადი შედის ფასში.</p>
                             </div>
 
@@ -444,7 +445,7 @@ export default function ProductPage({ params }) {
                 <div className="flex justify-between items-center max-w-lg mx-auto">
                     <div className="flex flex-col">
                         <span className="text-xs text-text-mutted line-through leading-none pb-1">65.00 ₾</span>
-                        <span className="text-2xl font-serif text-text-dark font-bold leading-none">39.00 ₾</span>
+                        <span className="text-2xl font-serif text-text-dark font-bold leading-none">19.00 ₾</span>
                     </div>
                     <button
                         onClick={handleAddToCart}
