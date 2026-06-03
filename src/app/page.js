@@ -223,7 +223,7 @@ export default function Home() {
                 className="mt-7 sm:mt-8 flex flex-wrap items-baseline gap-x-4 gap-y-1.5 text-[12px] sm:text-[13px] text-text-mutted"
               >
                 <span className="inline-flex items-baseline gap-2">
-                    <span className="font-serif text-lg text-text-dark tabular-nums">19 ₾</span>
+                    <span className="font-serif text-lg text-text-dark tabular-nums">60 ₾</span>
                     <span className="line-through text-text-mutted/55 tabular-nums">90 ₾</span>
                     <span className="inline-flex items-center px-1.5 py-0.5 bg-primary text-bg-light text-[9px] font-bold rounded-full leading-none">-33%</span>
                 </span>
