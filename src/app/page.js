@@ -223,7 +223,7 @@ export default function Home() {
                 className="mt-7 sm:mt-8 flex flex-wrap items-baseline gap-x-4 gap-y-1.5 text-[12px] sm:text-[13px] text-text-mutted"
               >
                 <span className="inline-flex items-baseline gap-2">
-                    <span className="font-serif text-lg text-text-dark tabular-nums">60 ₾</span>
+                    <span className="font-serif text-lg text-text-dark tabular-nums">19 ₾</span>
                     <span className="line-through text-text-mutted/55 tabular-nums">90 ₾</span>
                     <span className="inline-flex items-center px-1.5 py-0.5 bg-primary text-bg-light text-[9px] font-bold rounded-full leading-none">-33%</span>
                 </span>
@@ -1012,7 +1012,7 @@ export default function Home() {
                 href="/shop/read-me"
                 className="group inline-flex items-center justify-center gap-3 bg-bg-light text-text-dark pl-10 pr-7 py-5 sm:py-6 rounded-full text-lg sm:text-xl font-semibold hover:bg-primary hover:text-bg-light transition-all duration-400 shadow-[0_0_60px_rgba(255,255,255,0.22)]"
               >
-                <span>შეიძინე 39 ₾</span>
+                <span>შეიძინე 19 ₾</span>
                 <span className="flex items-center justify-center w-9 h-9 rounded-full bg-primary text-bg-light group-hover:bg-bg-light group-hover:text-primary transition-colors">
                   <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
                 </span>

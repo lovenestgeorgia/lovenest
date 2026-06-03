@@ -9,7 +9,7 @@ export default function SuccessPage() {
     useEffect(() => {
         if (typeof window !== 'undefined' && window.fbq) {
             window.fbq('track', 'Purchase', {
-                value: 39.00,
+                value: 19.00,
                 currency: 'GEL',
             });
         }

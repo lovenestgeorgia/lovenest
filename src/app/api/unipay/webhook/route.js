@@ -72,7 +72,7 @@ ${titleEmoji} **ახალი შეტყობინება Lovenest.ge-�
 
 💳 **სტატუსი**: ${statusText}
 📦 **შეკვეთის ID**: #${data.MerchantOrderId || "UNIPAY_TEST_ORDER"}
-💰 **თანხა**: ${data.OrderPrice || "39.00"} ₾
+💰 **თანხა**: ${data.OrderPrice || "19.00"} ₾
 
 👤 **მომხმარებელი**: ${customerParams.name}
 📧 **ელ.ფოსტა**: ${customerParams.email || "არ არის მითითებული"}
