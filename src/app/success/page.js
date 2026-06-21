@@ -5,13 +5,19 @@ import { Heart } from "lucide-react";
 import { useEffect } from "react";
 
 export default function SuccessPage() {
-    // Facebook Pixel: Purchase — უხილავი, მხოლოდ Facebook-ს ატყობინებს რომ გაყიდვა მოხდა
+    // Facebook Pixel: Purchase — უხილავი, Facebook-ს ატყობინებს რომ გაყიდვა მოხდა.
+    // eventID = order id -> სერვერის CAPI-სთან dedup (ერთი გაყიდვა ერთხელ ჩაითვლება).
     useEffect(() => {
         if (typeof window !== 'undefined' && window.fbq) {
-            window.fbq('track', 'Purchase', {
-                value: 19.00,
-                currency: 'GEL',
-            });
+            const params = new URLSearchParams(window.location.search);
+            const oid = params.get('oid');
+            const v = parseFloat(params.get('v'));
+            window.fbq(
+                'track',
+                'Purchase',
+                { value: isNaN(v) ? 19.00 : v, currency: 'GEL' },
+                oid ? { eventID: String(oid) } : undefined
+            );
         }
     }, []);
 

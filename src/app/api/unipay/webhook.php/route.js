@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { sendPurchaseCapi } from "@/lib/metaCapi";
 
 export async function POST(req) {
     try {
@@ -138,6 +139,25 @@ ${titleEmoji} **ახალი შეტყობინება Lovenest.ge-�
             }
         } catch (botError) {
             console.error("Failed to trigger Telegram bot:", botError);
+        }
+
+        // Meta Conversions API — server-side Purchase (reliable, redirect/adblock-proof).
+        // Dedups with the browser pixel on /success via shared event_id = order id.
+        try {
+            const ps = data.Status || data.status || (data.IsSuccess ? "Success" : "") || "";
+            if (String(ps).toLowerCase().includes("success")) {
+                await sendPurchaseCapi({
+                    value: data.OrderPrice || data.orderPrice || 19,
+                    currency: "GEL",
+                    eventId: data.MerchantOrderId || data.MerchantOrderID || "",
+                    email: customerParams.email,
+                    phone: customerParams.phone,
+                    clientIp: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim(),
+                    userAgent: req.headers.get("user-agent") || undefined,
+                });
+            }
+        } catch (capiError) {
+            console.error("CAPI Purchase failed:", capiError);
         }
 
         return NextResponse.json({ received: true });

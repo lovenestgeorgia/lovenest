@@ -35,7 +35,7 @@ export async function POST(req) {
             OrderCurrency: "GEL",
             OrderName: "Lovenest Book Order",
             OrderDescription: `USER::${name}::${phone}::${city}::${address}::${personalMessage || 'არასავალდებულო'}::${email || 'არასავალდებულო'}`,
-            SuccessRedirectUrl: Buffer.from(`${baseUrl}/success`).toString("base64"),
+            SuccessRedirectUrl: Buffer.from(`${baseUrl}/success?oid=${encodeURIComponent(orderId)}&v=${encodeURIComponent(typeof amount === 'number' ? amount.toFixed(2) : parseFloat(amount).toFixed(2))}`).toString("base64"),
             CancelRedirectUrl: Buffer.from(`${baseUrl}/cancel`).toString("base64"),
             CallBackUrl: Buffer.from(`${baseUrl}/api/unipay/webhook.php`).toString("base64"),
             Language: "KA"
